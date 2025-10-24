@@ -3,9 +3,8 @@ using namespace std;
 constexpr int WIDTH = 128;
 constexpr int HEIGHT = 64;
 constexpr int FRAME_SIZE = (WIDTH * HEIGHT) / 8;
-constexpr int NUM_FRAMES = 295; // ví dụ 3 frame
+constexpr int NUM_FRAMES = 295;
 
-// Lưu tất cả frame vào mảng 2 chiều
 constexpr uint8_t allFrames[NUM_FRAMES][FRAME_SIZE] = {
     {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
