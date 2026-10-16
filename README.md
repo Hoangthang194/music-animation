@@ -1,42 +1,55 @@
-# Tuyển tập Animation Pixel Art 20-10 💖
+# Tuyển tập Animation Pixel Art & Music Visualizer 💖
 
-Thư mục chứa 2 bộ tác phẩm animation pixel art (128x64 Monochrome OLED) dành riêng cho ngày 20-10:
+Dự án tự động chuyển đổi file nhạc MP3 thành bộ tác phẩm animation pixel art (128x64 Monochrome OLED SSD1306) và trình phát Web HD Vector:
 
 ---
 
-## 🌟 Bộ 1: "CỨ THẾ" - Orange x Hoàng Dũng (Special Edition 20/10)
-Tác phẩm mới được tạo tự động đồng bộ theo nhịp bài hát **"Cứ Thế" (Điệp khúc)**.
-- **Thời lượng:** ~32.2 giây (460 frames, 70ms/frame).
-- **Nội dung:** 
-  - Đôi bạn chibi nhún nhảy theo nhịp bass thực tế của bài hát.
-  - Lời bài hát tiếng Việt chuẩn dấu chạy khớp từng giây ca sĩ hát.
-  - Bạn nam tặng hoa cho bạn nữ, tim đập rộn ràng và sóng nhạc nhảy múa.
-  - Đoạn kết: Hai bạn bước lại gần nhau cùng lời chúc **"CHÚC MỪNG 20/10 💖"**.
+## 🌟 Bộ 1: "TELL ME WHY" - Dương Domic (Mới Nhất ✨)
+Tác phẩm được tạo tự động từ file âm thanh `audio_Feeling Soundzz_download.mp3` theo quy chuẩn [Agent.md](file:///c:/Users/ThangHoang/Documents/20-10/Agent.md).
+- **Thời lượng:** ~26.0 giây (372 frames, 70ms/frame).
+- **Nội dung cảm xúc:**
+  - *"Từng cơn đau tăng dần lên..."* - Chàng trai ôm gối ngồi dưới trăng khuyết buồn.
+  - *"Thời gian trôi âm thầm đếm..."* - Đồng hồ cát trôi lơ lửng, bước đi trong gió lạnh.
+  - *"Nỗi cô đơn ghé qua đêm nay..."* - Với tay tìm hình bóng cô gái xa xăm.
+  - *"Đêm qua đêm nay anh chẳng muốn quay lại..."* - Hai người đứng quay lưng giữa cơn gió đêm.
+  - *"Phải xa em anh nào muốn..."* - Che ô cho nhau, giọt lệ ngấn dài.
+  - *"Vì chia đôi vẫn còn thương..."* - Cặp đôi chạm tay, trái tim vỡ hàn gắn và phập phồng theo beat bass.
+  - **Finale:** Ôm ấm áp, bóng bay trái tim bay bổng và pháo hoa rực rỡ chào kết.
 
-### 🚀 Cách xem bộ "Cứ Thế":
-1. **Xem trên Web:** Mở file [index.html](file:///c:/Users/ThangHoang/Documents/20-10/index.html) (giao diện HD siêu sắc nét, tự động đồng bộ nhạc nền, tương thích hoàn hảo mobile & desktop).
-2. **Xem Native Desktop:** Nhấp đúp vào [run_cuthe.bat](file:///c:/Users/ThangHoang/Documents/20-10/run_cuthe.bat) hoặc chạy:
+### 🚀 Cách xem bộ "Tell Me Why":
+1. **Xem trên Web:** Mở file [index.html](file:///c:/Users/ThangHoang/Documents/20-10/index.html) hoặc [tell_me_why.html](file:///c:/Users/ThangHoang/Documents/20-10/tell_me_why.html) (Web Player Full-Height chuẩn Mobile & Desktop).
+2. **Xem Native Desktop:** Nhấp đúp vào [run_tellmewhy.bat](file:///c:/Users/ThangHoang/Documents/20-10/run_tellmewhy.bat) hoặc chạy:
    ```bash
-   python run_cuthe.py
+   python run_tellmewhy.py
    ```
-3. **Ảnh GIF gửi tặng ngay:** File [cuthe_20_10.gif](file:///c:/Users/ThangHoang/Documents/20-10/cuthe_20_10.gif) (chuẩn 384x192 sắc nét).
-4. **Mã nguồn C++ SFML:** File [cu_the.cpp](file:///c:/Users/ThangHoang/Documents/20-10/cu_the.cpp) (chuẩn 460 frame mảng nhị phân và audio loop).
+3. **Ảnh GIF gửi tặng ngay:** File [tellmewhy.gif](file:///c:/Users/ThangHoang/Documents/20-10/tellmewhy.gif) (chuẩn 384x192 sắc nét).
+4. **Mã nguồn C++ SFML:** File [tell_me_why.cpp](file:///c:/Users/ThangHoang/Documents/20-10/tell_me_why.cpp).
+5. **File nhị phân OLED:** File [tellmewhy_frames.bin](file:///c:/Users/ThangHoang/Documents/20-10/tellmewhy_frames.bin) nạp trực tiếp vào ESP32 / Arduino màn hình 0.96".
 
 ---
 
-## 🎬 Bộ 2: "I miss you..." (Rex Orange County - Best Friend)
-Bản animation gốc được tải về từ repository [baodeptraihihi/lmao-code](https://github.com/baodeptraihihi/lmao-code).
+## 🌸 Bộ 2: "CỨ THẾ" - Orange x Hoàng Dũng (Special Edition 20/10)
+- **Thời lượng:** ~32.2 giây (460 frames, 70ms/frame).
+- **Xem trên Desktop:** Nhấp đúp [run_cuthe.bat](file:///c:/Users/ThangHoang/Documents/20-10/run_cuthe.bat) hoặc `python run_cuthe.py`.
+- **Ảnh GIF:** [cuthe_20_10.gif](file:///c:/Users/ThangHoang/Documents/20-10/cuthe_20_10.gif).
+- **Mã nguồn C++:** [cu_the.cpp](file:///c:/Users/ThangHoang/Documents/20-10/cu_the.cpp).
+
+---
+
+## 🎬 Bộ 3: "I miss you..." (Rex Orange County - Best Friend)
+Bản animation kinh điển tải về từ repository [baodeptraihihi/lmao-code](https://github.com/baodeptraihihi/lmao-code).
 - **Mã nguồn C++:** [bestfriends.cpp](file:///c:/Users/ThangHoang/Documents/20-10/bestfriends.cpp)
 - **Xem trên Desktop:** Nhấp đúp [run.bat](file:///c:/Users/ThangHoang/Documents/20-10/run.bat) hoặc chạy `python run.py`.
-- **Xem trên Web:** Mở file [index.html](file:///c:/Users/ThangHoang/Documents/20-10/index.html).
 - **File GIF:** [animation.gif](file:///c:/Users/ThangHoang/Documents/20-10/animation.gif).
 
 ---
 
+## 🤖 Hướng dẫn tạo bài hát mới tự động
+Xem tài liệu đóng gói kỹ năng [Agent.md](file:///c:/Users/ThangHoang/Documents/20-10/Agent.md) hoặc [AGENTS.md](file:///c:/Users/ThangHoang/Documents/20-10/AGENTS.md).
+
 ### ⌨️ Phím tắt chung khi chạy Desktop:
 - `Space`: Tạm dừng / Tiếp tục
 - `M`: Tắt / Bật tiếng (Mute/Unmute)
-- `←` / `→`: Tua từng frame
 - `R`: Xem lại từ đầu
 - `L`: Bật/Tắt lặp lại
 - `I`: Chuyển đổi Dark / Light mode
