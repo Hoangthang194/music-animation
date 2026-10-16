@@ -2312,9 +2312,9 @@ if __name__ == "__main__":
 </html>
 '''
 
-    with open("index.html", "w", encoding="utf-8") as f:
+    with open("cu_the.html", "w", encoding="utf-8") as f:
         f.write(html_code)
-    print("Đã tạo index.html thành công!")
+    print("Đã tạo cu_the.html thành công!")
 
     print("\n=== HOÀN TẤT TẤT CẢ CÁC BƯỚC THÀNH CÔNG! ===")
 

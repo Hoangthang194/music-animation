@@ -1237,7 +1237,11 @@ if __name__ == "__main__":
                     <p>Dương Domic • Lo-Fi Cinematic Animation</p>
                 </div>
             </div>
-            <button class="badge" id="btnToggleMode" title="Chuyển đổi chế độ hiển thị">✨ HD Sắc Nét</button>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <a href="cu_the.html" class="badge" style="text-decoration: none; color: var(--text-muted); background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15);" title="Xem bài Cứ Thế">🌸 Cứ Thế (20/10)</a>
+                <span class="badge" style="background: rgba(255, 77, 141, 0.35); color: #fff; cursor: default;">💔 Tell Me Why</span>
+                <button class="badge" id="btnToggleMode" title="Chuyển đổi chế độ hiển thị">✨ HD Sắc Nét</button>
+            </div>
         </div>
 
         <div class="screen-wrapper" id="screenWrapper">

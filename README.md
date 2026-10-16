@@ -31,9 +31,11 @@ Tác phẩm được tạo tự động từ file âm thanh `audio_Feeling Sound
 
 ## 🌸 Bộ 2: "CỨ THẾ" - Orange x Hoàng Dũng (Special Edition 20/10)
 - **Thời lượng:** ~32.2 giây (460 frames, 70ms/frame).
+- **Xem trên Web:** Mở file [cu_the.html](file:///c:/Users/ThangHoang/Documents/20-10/cu_the.html) (Web Player Full-Height, có nút chuyển nhanh qua lại với Tell Me Why).
 - **Xem trên Desktop:** Nhấp đúp [run_cuthe.bat](file:///c:/Users/ThangHoang/Documents/20-10/run_cuthe.bat) hoặc `python run_cuthe.py`.
 - **Ảnh GIF:** [cuthe_20_10.gif](file:///c:/Users/ThangHoang/Documents/20-10/cuthe_20_10.gif).
 - **Mã nguồn C++:** [cu_the.cpp](file:///c:/Users/ThangHoang/Documents/20-10/cu_the.cpp).
+- **File nhị phân OLED:** [cuthe_frames.bin](file:///c:/Users/ThangHoang/Documents/20-10/cuthe_frames.bin).
 
 ---
 
