@@ -50,10 +50,10 @@ def build_ppm_frames(raw_bytes, invert=False):
 class TellMeWhyPlayer:
     def __init__(self, root):
         self.root = root
-        self.root.title("TELL ME WHY 💖 - Dương Domic (Animation Player)")
+        self.root.title("TELL ME WHY 💔 - Dương Domic (Smoking & Car Drive Animation)")
         self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.root.resizable(False, False)
-        self.root.configure(bg="#111116")
+        self.root.configure(bg="#0d0914")
 
         self.num_frames = NUM_FRAMES
         with open("tellmewhy_frames.bin", "rb") as f:
@@ -76,7 +76,7 @@ class TellMeWhyPlayer:
         self.image_item = self.canvas.create_image(0, 0, anchor="nw")
 
         self.status_var = tk.StringVar()
-        self.status_label = tk.Label(root, textvariable=self.status_var, font=("Consolas", 10, "bold"), fg="#ff8fb6", bg="#111116", pady=8)
+        self.status_label = tk.Label(root, textvariable=self.status_var, font=("Consolas", 10, "bold"), fg="#ff70a6", bg="#0d0914", pady=8)
         self.status_label.pack(side="bottom", fill="x")
 
         root.bind("<space>", self.toggle_play)

@@ -12,7 +12,7 @@ constexpr int NUM_FRAMES = 372;
 constexpr float FRAME_TIME = 0.070f;
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY - Duong Domic [SFML OLED Player]");
+    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY - Duong Domic [SFML Equalizer Player]");
     window.setFramerateLimit(60);
 
     // Doc frame tu tellmewhy_frames.bin

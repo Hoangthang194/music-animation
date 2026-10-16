@@ -1,11 +1,13 @@
 """
 Trình tạo trọn bộ Animation đồng bộ bài hát "TELL ME WHY" (Dương Domic)
-Theo quy chuẩn AGENTS.md / Agent.md:
+Chủ đề: CỰC KỲ TÂM TRẠNG & NỖI BUỒN SÂU LẮNG (Chàng trai hút thuốc, lái xe trong đêm mưa, gương chiếu hậu, cần gạt nước)
+Kèm theo: AUDIO EQUALIZER BARS (Các thanh nhạc nhảy sống động ở dưới theo nhịp nhạc)
+Chuẩn quy cách AGENTS.md / Agent.md:
 - 128x64 OLED monochrome 1-bit frames (tellmewhy_frames.bin)
 - GIF preview 384x192 (tellmewhy.gif)
 - C++ SFML source code (tell_me_why.cpp)
 - Native Python Tkinter Desktop player (run_tellmewhy.py + run_tellmewhy.bat)
-- Web Player chuẩn Mobile Full-Height (tell_me_why.html)
+- Web Player chuẩn Mobile Full-Height (tell_me_why.html & index.html)
 """
 
 import os
@@ -13,7 +15,9 @@ import sys
 import wave
 import struct
 import math
+import json
 import base64
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 def main():
@@ -22,7 +26,7 @@ def main():
             sys.stdout.reconfigure(encoding='utf-8')
         except Exception:
             pass
-    print("=== TẠO BỘ ANIMATION ĐỒNG BỘ: TELL ME WHY (DƯƠNG DOMIC) ===")
+    print("=== TẠO BỘ ANIMATION CỰC BUỒN & EQUALIZER: TELL ME WHY (DƯƠNG DOMIC) ===")
 
     wav_path = "tellmewhy.wav"
     mp3_path = "tellmewhy.mp3"
@@ -36,22 +40,55 @@ def main():
     data = w.readframes(nframes)
     w.close()
 
-    samples = struct.unpack_from(f'<{nframes * nchannels}h', data)
-    left = samples[0::nchannels]
-
+    samples = np.frombuffer(data, dtype=np.int16)
     FRAME_MS = 70
     frame_samples = int(rate * (FRAME_MS / 1000.0))
-    NUM_FRAMES = len(left) // frame_samples
+    NUM_FRAMES = len(samples) // frame_samples
     print(f"Tổng số frame: {NUM_FRAMES} (~{NUM_FRAMES * FRAME_MS / 1000:.1f}s)")
 
+    # 1. TÍNH TOÁN BĂNG TẦN EQUALIZER CHO 24 THANH NHẠC (AUDIO VISUALIZER)
+    print("Đang phân tích 24 dải tần số FFT (Audio Visualizer)...")
+    num_bars = 24
+    all_bars_raw = []
+    window = np.hanning(frame_samples)
+    freqs = np.fft.rfftfreq(frame_samples, 1 / rate)
+    band_edges = np.logspace(np.log10(45), np.log10(9000), num_bars + 1)
+
     energies = []
-    for i in range(NUM_FRAMES):
-        chunk = left[i * frame_samples : (i + 1) * frame_samples]
-        rms = math.sqrt(sum(s * s for s in chunk) / len(chunk)) if chunk else 0
-        energies.append(rms)
+    for f in range(NUM_FRAMES):
+        chunk = samples[f * frame_samples : (f + 1) * frame_samples]
+        if len(chunk) < frame_samples:
+            all_bars_raw.append([0.0] * num_bars)
+            energies.append(0.0)
+            continue
+
+        # Năng lượng RMS
+        rms = np.sqrt(np.mean(chunk.astype(float) ** 2))
+        energies.append(float(rms))
+
+        # FFT Spectrum
+        fft_vals = np.abs(np.fft.rfft(chunk * window))
+        bars = []
+        for b in range(num_bars):
+            mask = (freqs >= band_edges[b]) & (freqs < band_edges[b + 1])
+            val = np.mean(fft_vals[mask]) if np.any(mask) else 0.0
+            bars.append(float(val))
+        all_bars_raw.append(bars)
+
+    all_bars_raw = np.array(all_bars_raw)
+    max_vals = np.percentile(all_bars_raw, 97, axis=0)
+    max_vals[max_vals == 0] = 1
+    norm_bars = np.clip(all_bars_raw / max_vals, 0.08, 1.0) ** 0.72
 
     max_e = max(energies) or 1
     norm_energies = [e / max_e for e in energies]
+
+    # Chiều cao thanh nhạc (1 đến 8 pixels, nằm từ Y=63 lên đến Y=55)
+    bar_heights_per_frame = []
+    for f in range(NUM_FRAMES):
+        bh = (norm_bars[f] * 7.5).astype(int) + 1
+        bh = np.clip(bh, 1, 9).tolist()
+        bar_heights_per_frame.append(bh)
 
     try:
         font_lyrics = ImageFont.truetype('segoeuib.ttf', 8)
@@ -64,7 +101,7 @@ def main():
 
     # 7 Phân đoạn lời bài hát đồng bộ từng từ theo giây (Tell Me Why - Dương Domic)
     KARAOKE_TIMED_PHRASES = [
-        # Câu 1 (0.0s -> 3.8s) - Action 1: Ôm gối ngắm trăng khuyết
+        # Câu 1 (0.0s -> 3.8s) - Hút thuốc dưới đèn đường đêm mưa
         {
             "start_f": 0, "end_f": s_to_f(3.8), "action": 1,
             "lines": [
@@ -72,7 +109,7 @@ def main():
                 [(2.0, "tăng"), (2.6, "dần"), (3.1, "lên..."), (3.5, "🌧")]
             ]
         },
-        # Câu 2 (3.8s -> 7.5s) - Action 2: Bước đi một mình, đồng hồ cát
+        # Câu 2 (3.8s -> 7.5s) - Thở vòng khói tròn, đồng hồ cát
         {
             "start_f": s_to_f(3.8), "end_f": s_to_f(7.5), "action": 2,
             "lines": [
@@ -80,7 +117,7 @@ def main():
                 [(5.6, "âm"), (6.2, "thầm"), (6.8, "đếm..."), (7.2, "⏳")]
             ]
         },
-        # Câu 3 (7.5s -> 10.8s) - Action 3: Nỗi cô đơn, bóng hình em
+        # Câu 3 (7.5s -> 10.8s) - Lái xe trong đêm mưa một mình
         {
             "start_f": s_to_f(7.5), "end_f": s_to_f(10.8), "action": 3,
             "lines": [
@@ -88,7 +125,7 @@ def main():
                 [(9.1, "ghé"), (9.5, "qua"), (9.9, "đêm"), (10.3, "nay..."), (10.6, "🌙")]
             ]
         },
-        # Câu 4 (10.8s -> 14.0s) - Action 4: Quay lưng trong gió đêm
+        # Câu 4 (10.8s -> 14.0s) - Cần gạt nước kính xe, gương chiếu hậu
         {
             "start_f": s_to_f(10.8), "end_f": s_to_f(14.0), "action": 4,
             "lines": [
@@ -97,7 +134,7 @@ def main():
                 [(13.5, "quay"), (13.8, "lại...")]
             ]
         },
-        # Câu 5 (14.0s -> 17.5s) - Action 5: Phải xa em anh nào muốn
+        # Câu 5 (14.0s -> 17.5s) - Đỗ xe bên đường, tựa mui xe hút thuốc
         {
             "start_f": s_to_f(14.0), "end_f": s_to_f(17.5), "action": 5,
             "lines": [
@@ -105,7 +142,7 @@ def main():
                 [(15.6, "anh"), (16.2, "nào"), (16.8, "muốn..."), (17.2, "💔")]
             ]
         },
-        # Câu 6 (17.5s -> 21.5s) - Action 6: Vì chia đôi vẫn còn thương (chạm tay, tim hàn gắn)
+        # Câu 6 (17.5s -> 21.5s) - Nhìn điện thoại le lói, tim đau thắt
         {
             "start_f": s_to_f(17.5), "end_f": s_to_f(21.5), "action": 6,
             "lines": [
@@ -114,13 +151,13 @@ def main():
                 [(20.3, "thương..."), (20.8, "♥"), (21.2, "✨")]
             ]
         },
-        # Câu 7 (21.5s -> 26.04s) - Action 7: Outro & Finale ấm áp
+        # Câu 7 (21.5s -> 26.04s) - Xe lăn bánh xa dần vào màn đêm
         {
             "start_f": s_to_f(21.5), "end_f": NUM_FRAMES, "action": 7,
             "lines": [
                 [(21.6, "✨"), (22.0, "TELL"), (22.4, "ME"), (22.8, "WHY"), (23.2, "✨")],
                 [(23.6, "Dương"), (24.0, "Domic")],
-                [(24.5, "Vẫn"), (24.9, "còn"), (25.3, "thương"), (25.7, "nhau!"), (25.9, "💖")]
+                [(24.5, "Vẫn"), (24.9, "còn"), (25.3, "thương"), (25.7, "nhau..."), (25.9, "💖")]
             ]
         }
     ]
@@ -144,7 +181,7 @@ def main():
                 rendered_lines.append("")
         return active["action"], rendered_lines
 
-    print("Đang vẽ hoạt ảnh 128x64 chuẩn Pixel Art...")
+    print("Đang vẽ hoạt cảnh tâm trạng & các thanh nhạc Equalizer...")
     frame_images = []
     raw_all_bytes = bytearray()
 
@@ -154,277 +191,294 @@ def main():
         energy = norm_energies[f]
         beat_bounce = int(energy * 2.5)
 
-        # 1. Mặt đất & Dải phân cách dọc nhẹ nhàng
-        draw.line([(0, 54), (127, 54)], fill=0)
-        for dy in range(6, 50, 4):
+        # 1. Đường đất ngăn cách tại Y = 53
+        draw.line([(0, 53), (127, 53)], fill=0)
+
+        # 2. VẼ 24 THANH NHẠC EQUALIZER NHẢY DƯỚI ĐƯỜNG ĐẤT (Y: 55 đến 63)
+        bars_h = bar_heights_per_frame[f]
+        for b_idx in range(num_bars):
+            bx = 4 + b_idx * 5
+            bh = bars_h[b_idx]
+            # Vẽ thanh nhạc từ đáy Y=63 nhảy lên
+            draw.rectangle([bx, 63 - bh, bx + 2, 63], fill=0)
+
+        # 3. Dải phân cách dọc nhẹ nhàng ở giữa (X = 56, Y = 4 đến 48)
+        for dy in range(4, 50, 4):
             draw.point((56, dy), fill=0)
 
-        # Cỏ hoa dưới chân
-        for fx in [6, 18, 42, 50, 115, 122]:
-            draw.point([(fx, 53), (fx, 52)], fill=0)
-
-        # 2. VẼ CHỮ BÊN PHẢI (X: 58 đến 126, tâm tại X=92)
+        # 4. VẼ LỜI KARAOKE BÊN PHẢI (X: 58 đến 126, tâm tại X=92)
         action, lines = get_karaoke_data(f)
         text_x = 92
         num_l = len(lines)
         if num_l == 2:
-            y_starts = [22, 36]
+            y_starts = [20, 34]
         elif num_l == 3:
-            y_starts = [16, 28, 40]
+            y_starts = [15, 27, 39]
         else:
-            y_starts = [10, 20, 30, 40]
+            y_starts = [9, 19, 29, 39]
 
         for i, text_str in enumerate(lines):
             if text_str and i < len(y_starts):
                 draw.text((text_x, y_starts[i]), text_str, font=font_lyrics, fill=0, anchor='mm')
 
-        # 3. VẼ HOẠT CẢNH BÊN TRÁI (X: 0 đến 55)
-        is_blinking = (f % 40 in [0, 1])
+        # 5. VẼ HOẠT CẢNH CỰC BUỒN BÊN TRÁI (X: 0 đến 55, Y: 0 đến 52)
+        is_blinking = (f % 35 in [0, 1])
+
+        # Hạt mưa rơi rải rác
+        for rx, r_seed in [(8, 11), (22, 17), (35, 7), (48, 23)]:
+            ry = ((f * 3 + r_seed * 4) % 45) + 6
+            if ry < 52:
+                draw.line([(rx, ry), (rx - 1, ry + 2)], fill=0)
 
         if action == 1:
-            # --- ACTION 1: TỪNG CƠN ĐAU TĂNG DẦN LÊN ---
-            # Nam ngồi ôm gối, trăng khuyết & giọt sầu rơi
-            bx = 26
-            by = 38 - beat_bounce
+            # --- ACTION 1: HÚT THUỐC DƯỚI CỘT ĐÈN ĐƯỜNG ĐÊM MƯA ---
+            # Cột đèn đường tại X=8
+            draw.line([(8, 12), (8, 52)], fill=0)
+            draw.line([(7, 12), (14, 8)], fill=0)
+            draw.arc([11, 8, 19, 16], start=180, end=360, fill=0)  # Chụp đèn
+            draw.line([(11, 12), (19, 12)], fill=0)
+            # Quầng sáng hình nón
+            for dy in range(16, 52, 4):
+                draw.point([(8 + (dy - 16) // 3, dy)], fill=0)
 
-            # Trăng khuyết trên bầu trời
-            draw.arc([10, 8, 22, 20], start=45, end=270, fill=0)
-            draw.arc([13, 8, 22, 20], start=60, end=250, fill=0)
-
-            # Sao lấp lánh buồn
-            if f % 10 < 6:
-                draw.point([(38, 12), (37, 12), (39, 12), (38, 11), (38, 13)], fill=0)
-                draw.point([(18, 22), (18, 21), (18, 23)], fill=0)
-
-            # Chàng trai ngồi co ro
+            # Chàng trai đứng hút thuốc
+            bx = 28
+            by = 31 - beat_bounce
+            # Đầu & Tóc rủ
             draw.ellipse([bx-4, by-5, bx+4, by+5], outline=0, fill=1)
-            draw.line([(bx-4, by-2), (bx+4, by-3)], fill=0)  # Tóc
+            draw.line([(bx-4, by-2), (bx+2, by-4)], fill=0)
+            draw.line([(bx-2, by-5), (bx+4, by-2)], fill=0)
             # Mắt nhắm buồn
             draw.line([(bx-3, by), (bx-1, by+1)], fill=0)
-            draw.line([(bx+1, by), (bx+3, by+1)], fill=0)
-            # Thân ngồi cuộn tròn
-            draw.ellipse([bx-5, by+5, bx+5, by+15], outline=0, fill=1)
-            # Tay ôm gối
-            draw.arc([bx-5, by+7, bx+5, by+13], start=0, end=180, fill=0)
-            # Tim rạn nứt
-            draw.polygon([(bx+8, by-2), (bx+6, by-5), (bx+10, by-5)], outline=0, fill=0)
-            draw.line([(bx+8, by-5), (bx+8, by-2)], fill=1)
+            # Áo khoác dài
+            draw.polygon([(bx-4, by+6), (bx+4, by+6), (bx+5, by+16), (bx-5, by+16)], outline=0, fill=1)
+            # Tay cầm điếu thuốc đưa lên môi
+            draw.line([(bx-3, by+8), (bx-6, by+13)], fill=0)
+            draw.line([(bx+3, by+8), (bx+6, by+2)], fill=0)
+            # Điếu thuốc nhỏ
+            draw.line([(bx+6, by+2), (bx+10, by+1)], fill=0)
+            # Tàn thuốc đỏ nhấp nháy
+            if f % 4 < 3:
+                draw.point([(bx+10, by+1)], fill=0)
+            # Làn khói thuốc uốn lượn
+            for i in range(1, 9):
+                sy = by - i * 2
+                sx = int(bx + 10 + math.sin(f * 0.35 + i * 0.8) * (i * 0.7))
+                if 0 <= sx < 55 and sy > 2:
+                    draw.point([(sx, sy)], fill=0)
+
+            # Chân
+            draw.line([(bx-2, by+17), (bx-2, 52)], fill=0)
+            draw.line([(bx+2, by+17), (bx+2, 52)], fill=0)
 
         elif action == 2:
-            # --- ACTION 2: THỜI GIAN TRÔI ÂM THẦM ĐẾM ---
-            # Đồng hồ cát & Chàng trai bước đi trong đêm
-            walk = (f // 2) % 4
-            bx = 22
-            by = 31 - beat_bounce
+            # --- ACTION 2: RÍT THUỐC, THỞ VÒNG KHÓI TRÒN (SMOKE RINGS) ---
+            bx = 20
+            by = 30 - beat_bounce
 
-            # Đồng hồ cát ở góc trên
-            hx = 38
+            # Chàng trai nhìn nghiêng ngửa đầu thở khói
+            draw.ellipse([bx-5, by-5, bx+4, by+5], outline=0, fill=1)
+            draw.polygon([(bx-5, by-2), (bx-6, by-5), (bx, by-7), (bx+4, by-3)], outline=0, fill=0)
+            draw.point([(bx+1, by)], fill=0)  # Mắt nhìn nghiêng
+            draw.rectangle([bx-4, by+6, bx+4, by+15], outline=0, fill=1)
+            draw.line([(bx-3, by+8), (bx-6, by+14)], fill=0)
+            # Điếu thuốc kẹp trên tay buông xuống
+            draw.line([(bx+3, by+8), (bx+6, by+12)], fill=0)
+            draw.line([(bx+6, by+12), (bx+9, by+13)], fill=0)
+            draw.point([(bx+9, by+13)], fill=0)
+
+            # Các vòng khói thuốc tròn (Smoke rings) bay lên
+            ring_phase = (f * 0.8) % 24
+            # Vòng khói 1
+            r1_y = int(by - 2 - ring_phase * 0.6)
+            r1_x = int(bx + 7 + ring_phase * 0.8)
+            draw.ellipse([r1_x-2, r1_y-1, r1_x+2, r1_y+1], outline=0, fill=1)
+            # Vòng khói 2
+            r2_y = int(by - 6 - ((ring_phase + 10) % 24) * 0.6)
+            r2_x = int(bx + 12 + ((ring_phase + 10) % 24) * 0.8)
+            draw.ellipse([r2_x-3, r2_y-2, r2_x+3, r2_y+2], outline=0, fill=1)
+
+            # Đồng hồ cát đếm thời gian
+            hx = 45
             hy = 14
-            draw.polygon([(hx-5, hy-6), (hx+5, hy-6), (hx, hy), (hx+5, hy+6), (hx-5, hy+6), (hx, hy)], outline=0, fill=1)
-            draw.line([(hx-6, hy-6), (hx+6, hy-6)], fill=0)
-            draw.line([(hx-6, hy+6), (hx+6, hy+6)], fill=0)
-            # Hạt cát rơi
-            if (f % 4) < 2:
-                draw.point([(hx, hy+2), (hx, hy+4)], fill=0)
+            draw.polygon([(hx-4, hy-6), (hx+4, hy-6), (hx, hy), (hx+4, hy+6), (hx-4, hy+6), (hx, hy)], outline=0, fill=1)
+            draw.line([(hx-5, hy-6), (hx+5, hy-6)], fill=0)
+            draw.line([(hx-5, hy+6), (hx+5, hy+6)], fill=0)
+            draw.point([(hx, hy+2 + (f % 4))], fill=0)  # Cát rơi
 
-            # Nam bước đi
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            eye_y = by if not is_blinking else by + 1
-            draw.point([(bx-2, eye_y), (bx+2, eye_y)], fill=0)
-            draw.rectangle([bx-4, by+7, bx+4, by+14], outline=0, fill=1)
-            # Khăn len bay trong gió
-            scarf_wave = int(math.sin(f * 0.4) * 2)
-            draw.line([(bx-4, by+8), (bx-9, by+9 + scarf_wave)], fill=0)
-            # Chân bước
-            if walk in [0, 2]:
-                draw.line([(bx-2, by+15), (bx-4, 53)], fill=0)
-                draw.line([(bx+2, by+15), (bx+4, 53)], fill=0)
-            else:
-                draw.line([(bx-2, by+15), (bx, 53)], fill=0)
-                draw.line([(bx+2, by+15), (bx+1, 53)], fill=0)
+            # Chân
+            draw.line([(bx-2, by+16), (bx-2, 52)], fill=0)
+            draw.line([(bx+2, by+16), (bx+2, 52)], fill=0)
 
         elif action == 3:
-            # --- ACTION 3: NỖI CÔ ĐƠN GHÉ QUA ĐÊM NAY ---
-            # Nam với tay tìm bóng hình Nữ mờ ảo
-            bx = 18
-            gx = 42
-            by = 31 - beat_bounce
-            gy = 31
+            # --- ACTION 3: LÁI XE TRONG ĐÊM MƯA CÔ ĐỘC (NIGHT DRIVE) ---
+            # Chiếc xe ô tô nhìn bên hông
+            car_y = 42
+            # Thân xe
+            draw.rectangle([6, car_y, 48, car_y + 6], outline=0, fill=1)
+            # Mui xe cong
+            draw.polygon([(14, car_y), (20, car_y - 9), (36, car_y - 9), (42, car_y)], outline=0, fill=1)
+            # Kính xe
+            draw.polygon([(20, car_y - 1), (22, car_y - 8), (34, car_y - 8), (38, car_y - 1)], outline=0, fill=1)
 
-            # Đám mây đêm xám
-            draw.ellipse([20, 6, 36, 14], outline=0, fill=1)
-            draw.ellipse([26, 4, 42, 12], outline=0, fill=1)
+            # Chàng trai sau tay lái bên trong xe
+            draw.ellipse([25, car_y - 7, 31, car_y - 1], outline=0, fill=1)  # Đầu
+            draw.line([(28, car_y - 1), (33, car_y + 1)], fill=0)  # Tay lái
+            # Điếu thuốc kẹp trên tay thò ra ngoài cửa kính
+            draw.line([(25, car_y - 1), (20, car_y - 3)], fill=0)
+            draw.point([(19, car_y - 3)], fill=0)
+            # Tàn khói bay lùi về sau
+            for k in range(1, 6):
+                draw.point([(18 - k * 2, car_y - 3 - int(math.sin(f*0.5 + k)*2))], fill=0)
 
-            # Nam với tay
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            draw.point([(bx-2, by), (bx+2, by)], fill=0)
-            draw.rectangle([bx-4, by+7, bx+4, by+14], outline=0, fill=1)
-            draw.line([(bx+4, by+9), (bx+10, by+7)], fill=0)  # Tay với
-            draw.line([(bx-2, by+15), (bx-2, 53)], fill=0)
-            draw.line([(bx+2, by+15), (bx+2, 53)], fill=0)
+            # Bánh xe trước & sau xoay tròn
+            wheel_rot = (f * 2) % 4
+            for wx in [16, 40]:
+                draw.ellipse([wx-4, car_y+3, wx+4, car_y+11], outline=0, fill=1)
+                # Nan hoa bánh xe xoay
+                if wheel_rot in [0, 2]:
+                    draw.line([(wx-3, car_y+7), (wx+3, car_y+7)], fill=0)
+                    draw.line([(wx, car_y+4), (wx, car_y+10)], fill=0)
+                else:
+                    draw.line([(wx-2, car_y+5), (wx+2, car_y+9)], fill=0)
+                    draw.line([(wx-2, car_y+9), (wx+2, car_y+5)], fill=0)
 
-            # Nữ nhìn lại xa xăm
-            draw.ellipse([gx-5, gy-6, gx+5, gy+6], outline=0, fill=1)
-            draw.arc([gx-6, gy-7, gx+6, gy], start=180, end=360, fill=0)
-            draw.line([(gx-6, gy-3), (gx-7, gy+8)], fill=0)
-            draw.line([(gx+6, gy-3), (gx+7, gy+8)], fill=0)
-            draw.polygon([(gx+4, gy-5), (gx+8, gy-7), (gx+8, gy-2)], outline=0, fill=0)  # Nơ
-            draw.point([(gx-2, gy), (gx+2, gy)], fill=0)
-            draw.polygon([(gx, gy+7), (gx-5, gy+15), (gx+5, gy+15)], outline=0, fill=1)
-            draw.line([(gx-2, gy+16), (gx-2, 53)], fill=0)
-            draw.line([(gx+2, gy+16), (gx+2, 53)], fill=0)
+            # Đèn pha xe phía trước chiếu sáng
+            draw.line([(48, car_y + 2), (55, car_y - 2)], fill=0)
+            draw.line([(48, car_y + 4), (55, car_y + 7)], fill=0)
+
+            # Vệt kẻ đường lướt nhanh về sau
+            road_shift = (f * 4) % 12
+            for rx in range(0, 56, 12):
+                pos = rx - road_shift
+                if 0 <= pos < 52:
+                    draw.line([(pos, 52), (min(55, pos + 5), 52)], fill=0)
 
         elif action == 4:
-            # --- ACTION 4: QUAY LƯNG TRONG ĐÊM ---
-            # Nam và Nữ đứng quay lưng, vạt áo lay động
-            bx = 20
-            gx = 36
-            by = 31 - beat_bounce
-            gy = 31 - beat_bounce
+            # --- ACTION 4: CẦN GẠT NƯỚC KÍNH XE & GƯƠNG CHIẾU HẬU ---
+            # Gương chiếu hậu ô tô ở trên phản chiếu ánh mắt buồn
+            draw.rectangle([14, 8, 42, 20], outline=0, fill=1)
+            draw.line([(28, 4), (28, 8)], fill=0)  # Chân gương
+            # Đôi mắt buồn nhìn trong gương chiếu hậu
+            draw.arc([20, 11, 26, 17], start=0, end=180, fill=0)
+            draw.arc([30, 11, 36, 17], start=0, end=180, fill=0)
+            draw.point([(23, 14), (33, 14)], fill=0)
 
-            # Nam nhìn sang trái
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            draw.point([(bx-3, by)], fill=0)
-            draw.rectangle([bx-4, by+7, bx+4, by+14], outline=0, fill=1)
-            draw.line([(bx-4, by+9), (bx-7, by+13)], fill=0)
-            draw.line([(bx-2, by+15), (bx-2, 53)], fill=0)
-            draw.line([(bx+2, by+15), (bx+2, 53)], fill=0)
+            # Kính chắn gió phía dưới với cần gạt nước gạt qua lại
+            draw.rectangle([4, 25, 52, 51], outline=0, fill=1)
+            # Cần gạt nước xoay góc
+            wiper_angle = math.sin(f * 0.45) * 16
+            draw.line([(28, 50), (int(28 + wiper_angle), 28)], fill=0)
+            # Cánh gạt cao su
+            draw.line([(int(28 + wiper_angle - 4), 28), (int(28 + wiper_angle + 4), 28)], fill=0)
 
-            # Nữ nhìn sang phải
-            draw.ellipse([gx-5, gy-6, gx+5, gy+6], outline=0, fill=1)
-            draw.arc([gx-6, gy-7, gx+6, gy], start=180, end=360, fill=0)
-            draw.line([(gx-6, gy-3), (gx-7, gy+8)], fill=0)
-            draw.line([(gx+6, gy-3), (gx+7, gy+8)], fill=0)
-            draw.polygon([(gx+4, gy-5), (gx+8, gy-7), (gx+8, gy-2)], outline=0, fill=0)
-            draw.point([(gx+3, gy)], fill=0)
-            draw.polygon([(gx, gy+7), (gx-5, gy+15), (gx+5, gy+15)], outline=0, fill=1)
-            draw.line([(gx+4, gy+9), (gx+7, gy+13)], fill=0)
-            draw.line([(gx-2, gy+16), (gx-2, 53)], fill=0)
-            draw.line([(gx+2, gy+16), (gx+2, 53)], fill=0)
-
-            # Cơn gió thổi giữa 2 người
-            wind_x = 28 + int(math.sin(f * 0.5) * 3)
-            draw.arc([wind_x-4, 25, wind_x+4, 35], start=45, end=180, fill=0)
+            # Giọt nước mưa chảy trên kính
+            for kx, ky in [(10, 32), (18, 40), (38, 30), (46, 42), (24, 36)]:
+                d_y = ((ky + f * 2) % 22) + 26
+                draw.line([(kx, d_y), (kx, d_y + 2)], fill=0)
 
         elif action == 5:
-            # --- ACTION 5: PHẢI XA EM ANH NÀO MUỐN ---
-            # Nam che ô / chìa tay, Nữ ngấn lệ
-            bx = 18
-            gx = 36
+            # --- ACTION 5: ĐỖ XE VEN ĐƯỜNG, TỰA LƯNG VÀO XE HÚT THUỐC ---
+            # Xe đỗ ở góc trái
+            draw.rectangle([2, 40, 26, 48], outline=0, fill=1)
+            draw.polygon([(6, 40), (12, 33), (22, 33), (26, 40)], outline=0, fill=1)
+            draw.ellipse([8, 45, 14, 51], outline=0, fill=1)
+            draw.ellipse([20, 45, 26, 51], outline=0, fill=1)
+
+            # Chàng trai tựa lưng vào đầu xe
+            bx = 32
             by = 31
-            gy = 31
-
-            # Nam cầm ô
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            draw.point([(bx-2, by), (bx+2, by)], fill=0)
-            draw.rectangle([bx-4, by+7, bx+4, by+14], outline=0, fill=1)
-            draw.line([(bx+4, by+9), (28, 30)], fill=0)  # Cán ô
-            draw.line([(bx-2, by+15), (bx-2, 53)], fill=0)
-            draw.line([(bx+2, by+15), (bx+2, 53)], fill=0)
-
-            # Chiếc ô che cho cả hai
-            draw.arc([16, 12, 40, 32], start=180, end=360, fill=0)
-            draw.line([(16, 22), (40, 22)], fill=0)
-            draw.line([(28, 22), (28, 34)], fill=0)
-
-            # Nữ ngước nhìn, giọt lệ rơi
-            draw.ellipse([gx-5, gy-6, gx+5, gy+6], outline=0, fill=1)
-            draw.arc([gx-6, gy-7, gx+6, gy], start=180, end=360, fill=0)
-            draw.line([(gx-6, gy-3), (gx-7, gy+8)], fill=0)
-            draw.line([(gx+6, gy-3), (gx+7, gy+8)], fill=0)
-            draw.polygon([(gx+4, gy-5), (gx+8, gy-7), (gx+8, gy-2)], outline=0, fill=0)
-            draw.point([(gx-2, gy), (gx+2, gy)], fill=0)
+            draw.ellipse([bx-4, by-5, bx+4, by+5], outline=0, fill=1)
+            draw.line([(bx-4, by-2), (bx+3, by-4)], fill=0)  # Tóc ướt mưa
+            draw.line([(bx-3, by), (bx-1, by+1)], fill=0)  # Mắt cúi gằm
             # Giọt lệ rơi
-            tear_y = gy + 2 + (f % 5)
-            draw.point([(gx-1, tear_y)], fill=0)
-            draw.polygon([(gx, gy+7), (gx-5, gy+15), (gx+5, gy+15)], outline=0, fill=1)
-            draw.line([(gx-2, gy+16), (gx-2, 53)], fill=0)
-            draw.line([(gx+2, gy+16), (gx+2, 53)], fill=0)
+            draw.point([(bx+1, by + 2 + (f % 4))], fill=0)
+            # Thân tựa nghiêng vào xe
+            draw.polygon([(bx-4, by+6), (bx+4, by+6), (bx+5, by+16), (bx-5, by+16)], outline=0, fill=1)
+            # Tay chụm che điếu thuốc
+            draw.line([(bx-3, by+8), (bx+4, by+4)], fill=0)
+            draw.line([(bx+3, by+8), (bx+5, by+4)], fill=0)
+            draw.point([(bx+6, by+4)], fill=0)
+            # Khói thuốc bay nghi ngút
+            for i in range(1, 8):
+                draw.point([(int(bx + 6 + math.sin(f*0.3 + i)*1.5), by + 3 - i * 2)], fill=0)
+
+            # Trái tim rạn vỡ nhói đau
+            draw.polygon([(bx+10, by-2), (bx+7, by-6), (bx+13, by-6)], outline=0, fill=0)
+            draw.line([(bx+10, by-6), (bx+10, by-2)], fill=1)
+
+            # Chân bắt chéo tựa xe
+            draw.line([(bx-2, by+17), (bx-5, 52)], fill=0)
+            draw.line([(bx+2, by+17), (bx+1, 52)], fill=0)
 
         elif action == 6:
-            # --- ACTION 6: VÌ CHIA ĐÔI VẪN CÒN THƯƠNG ---
-            # Chạm tay nhau, trái tim hàn gắn phập phồng
-            bx = 20
-            gx = 36
-            by = 31 - beat_bounce
-            gy = 31 - beat_bounce
+            # --- ACTION 6: NGỒI TRÊN XE, NHÌN ĐIỆN THOẠI PHÁT SÁNG ---
+            # Chàng trai ngồi trên mui xe
+            bx = 24
+            by = 28 - beat_bounce
+            draw.ellipse([bx-4, by-5, bx+4, by+5], outline=0, fill=1)
+            draw.line([(bx-3, by), (bx-1, by+1)], fill=0)  # Mắt nhìn xuống
+            draw.rectangle([bx-4, by+6, bx+4, by+15], outline=0, fill=1)
 
-            # Nam
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            draw.point([(bx-2, by), (bx+2, by)], fill=0)
-            draw.rectangle([bx-4, by+7, bx+4, by+14], outline=0, fill=1)
-            draw.line([(bx+4, by+9), (28, 39)], fill=0)
-            draw.line([(bx-2, by+15), (bx-2, 53)], fill=0)
-            draw.line([(bx+2, by+15), (bx+2, 53)], fill=0)
+            # Tay cầm chiếc điện thoại phát sáng
+            draw.line([(bx+3, by+8), (bx+8, by+10)], fill=0)
+            draw.rectangle([bx+8, by+7, bx+13, by+14], outline=0, fill=0)  # Điện thoại
+            draw.rectangle([bx+9, by+8, bx+12, by+12], outline=0, fill=1)  # Màn hình phát sáng
 
-            # Nữ
-            draw.ellipse([gx-5, gy-6, gx+5, gy+6], outline=0, fill=1)
-            draw.arc([gx-6, gy-7, gx+6, gy], start=180, end=360, fill=0)
-            draw.line([(gx-6, gy-3), (gx-7, gy+8)], fill=0)
-            draw.line([(gx+6, gy-3), (gx+7, gy+8)], fill=0)
-            draw.polygon([(gx+4, gy-5), (gx+8, gy-7), (gx+8, gy-2)], outline=0, fill=0)
-            draw.point([(gx-2, gy), (gx+2, gy)], fill=0)
-            draw.polygon([(gx, gy+7), (gx-5, gy+15), (gx+5, gy+15)], outline=0, fill=1)
-            draw.line([(gx-4, gy+9), (28, 39)], fill=0)
-            draw.line([(gx-2, gy+16), (gx-2, 53)], fill=0)
-            draw.line([(gx+2, gy+16), (gx+2, 53)], fill=0)
+            # Điếu thuốc kẹp tay trái buông thõng
+            draw.line([(bx-3, by+8), (bx-6, by+14)], fill=0)
+            draw.line([(bx-6, by+14), (bx-9, by+15)], fill=0)
+            draw.point([(bx-9, by+15)], fill=0)  # Tàn thuốc
+            # Khói thuốc
+            draw.point([(bx-10, by+13), (bx-11, by+10), (bx-10, by+8)], fill=0)
 
-            # Nắm tay nhau tại X=28, Y=39
-            draw.point([(28, 39), (28, 40)], fill=0)
-
-            # Trái tim to ở giữa phập phồng theo beat
+            # Trái tim lớn rạn vỡ đập thắt lại theo nhịp bass
+            hx = 40
+            hy = 14 - int(math.sin(f * 0.3) * 2)
             hw = 4 + beat_bounce
-            hx = 28
-            hy = 18 - int(math.sin(f * 0.3) * 2)
-            draw.polygon([(hx, hy+hw), (hx-hw, hy), (hx-hw+1, hy-hw//2), (hx, hy-hw//3), (hx+hw-1, hy-hw//2), (hx+hw, hy)], fill=0)
+            draw.polygon([(hx, hy+hw), (hx-hw, hy), (hx-hw+1, hy-hw//2), (hx, hy-hw//3), (hx+hw-1, hy-hw//2), (hx+hw, hy)], outline=0, fill=0)
+            draw.line([(hx, hy-hw//3), (hx-1, hy+1), (hx+1, hy+2), (hx, hy+hw)], fill=1)  # Vết nứt
+
+            # Chân thả lỏng ngồi trên thành xe
+            draw.line([(bx-2, by+16), (bx-2, by+23)], fill=0)
+            draw.line([(bx-2, by+23), (bx+2, by+23)], fill=0)
+            # Thân xe dưới chân
+            draw.rectangle([10, by+20, 48, 52], outline=0, fill=1)
+            draw.ellipse([14, 46, 20, 52], outline=0, fill=1)
+            draw.ellipse([38, 46, 44, 52], outline=0, fill=1)
 
         elif action == 7:
-            # --- ACTION 7: OUTRO & FINALE ---
-            # Cặp đôi ôm ấm áp & Bắn pháo hoa sao lấp lánh
-            bx = 24
-            gx = 32
-            by = 31 - beat_bounce
-            gy = 31 - beat_bounce
+            # --- ACTION 7: XE LĂN BÁNH XA DẦN VÀO MÀN ĐÊM VÔ TẬN ---
+            # Phối cảnh đường hun hút về điểm vô cực (X=28, Y=26)
+            draw.line([(28, 26), (6, 52)], fill=0)
+            draw.line([(28, 26), (50, 52)], fill=0)
+            # Vạch giữa đường mờ dần
+            for wy in range(28, 52, 6):
+                draw.line([(28, wy), (28, wy + 3)], fill=0)
 
-            # Thân ôm nhau
-            draw.rectangle([bx-4, by+7, gx+4, by+15], outline=0, fill=1)
-            draw.line([(bx-4, by+9), (gx+2, by+10)], fill=0)
-            draw.line([(gx+4, gy+9), (bx-2, by+10)], fill=0)
-            draw.line([(bx-2, by+16), (bx-2, 53)], fill=0)
-            draw.line([(gx+2, gy+16), (gx+2, 53)], fill=0)
+            # Chiếc xe nhỏ dần lùi về phía xa
+            car_dist = int(math.sin(f * 0.1) * 2)
+            cx = 28
+            cy = 38 + car_dist
+            # Xe nhìn từ phía sau
+            draw.rectangle([cx-8, cy, cx+8, cy+6], outline=0, fill=1)
+            draw.polygon([(cx-6, cy), (cx-4, cy-4), (cx+4, cy-4), (cx+6, cy)], outline=0, fill=1)
+            # 2 đốm đèn hậu đỏ rực
+            draw.point([(cx-6, cy+3), (cx+6, cy+3)], fill=0)
+            # Khói xe xả ra
+            draw.point([(cx-7, cy+6), (cx-9, cy+5), (cx-10, cy+3)], fill=0)
 
-            # Đầu Nam
-            draw.ellipse([bx-5, by-6, bx+5, by+6], outline=0, fill=1)
-            draw.polygon([(bx-5, by-3), (bx-6, by-6), (bx, by-8), (bx+5, by-5), (bx+5, by-1)], outline=0, fill=0)
-            draw.point([(bx-2, by), (bx+2, by)], fill=0)
-            draw.arc([bx-2, by+1, bx+2, by+3], start=0, end=180, fill=0)
+            # Điếu thuốc tàn nằm lại bên vệ đường
+            draw.line([(42, 50), (45, 51)], fill=0)
+            if f % 4 < 2:
+                draw.point([(42, 50)], fill=0)
 
-            # Đầu Nữ
-            draw.ellipse([gx-5, gy-6, gx+5, gy+6], outline=0, fill=1)
-            draw.arc([gx-6, gy-7, gx+6, gy], start=180, end=360, fill=0)
-            draw.line([(gx-6, gy-3), (gx-7, gy+8)], fill=0)
-            draw.line([(gx+6, gy-3), (gx+7, gy+8)], fill=0)
-            draw.polygon([(gx+4, gy-5), (gx+8, gy-7), (gx+8, gy-2)], outline=0, fill=0)
-            draw.point([(gx-2, gy), (gx+2, gy)], fill=0)
-            draw.arc([gx-2, gy+1, gx+2, gy+3], start=0, end=180, fill=0)
+            # Sao lấp lánh tĩnh lặng
+            for sx, sy in [(12, 10), (44, 8), (20, 16), (36, 14)]:
+                if (f + sx) % 6 < 3:
+                    draw.point([(sx, sy)], fill=0)
 
-            # Bóng bay trái tim bay bổng
-            blx = 28 + int(math.sin(f * 0.25) * 3)
-            bly = 10
-            draw.polygon([(blx, bly+4), (blx-4, bly), (blx-3, bly-2), (blx, bly-1), (blx+3, bly-2), (blx+4, bly)], fill=0)
-            draw.line([(blx, bly+4), (28, 24)], fill=0)
-
-            # Pháo hoa sao lấp lánh hai bên
-            fx_y = 12 + (f % 5)
-            draw.point([(8, fx_y), (7, fx_y), (9, fx_y), (8, fx_y-1), (8, fx_y+1)], fill=0)
-            draw.point([(48, fx_y+2), (47, fx_y+2), (49, fx_y+2), (48, fx_y+1), (48, fx_y+3)], fill=0)
-
-        # 4. CHUYỂN THÀNH 1024 BYTES (1 bit/pixel MSB-first)
+        # 6. CHUYỂN THÀNH 1024 BYTES (1 bit/pixel MSB-first)
         frame_bytes = bytearray(1024)
         for y in range(64):
             for x in range(128):
@@ -471,7 +525,7 @@ constexpr int NUM_FRAMES = {NUM_FRAMES};
 constexpr float FRAME_TIME = 0.070f;
 
 int main() {{
-    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY - Duong Domic [SFML OLED Player]");
+    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY - Duong Domic [SFML Equalizer Player]");
     window.setFramerateLimit(60);
 
     // Doc frame tu tellmewhy_frames.bin
@@ -593,10 +647,10 @@ def build_ppm_frames(raw_bytes, invert=False):
 class TellMeWhyPlayer:
     def __init__(self, root):
         self.root = root
-        self.root.title("TELL ME WHY 💖 - Dương Domic (Animation Player)")
+        self.root.title("TELL ME WHY 💔 - Dương Domic (Smoking & Car Drive Animation)")
         self.root.geometry(f"{{WINDOW_WIDTH}}x{{WINDOW_HEIGHT}}")
         self.root.resizable(False, False)
-        self.root.configure(bg="#111116")
+        self.root.configure(bg="#0d0914")
 
         self.num_frames = NUM_FRAMES
         with open("tellmewhy_frames.bin", "rb") as f:
@@ -619,7 +673,7 @@ class TellMeWhyPlayer:
         self.image_item = self.canvas.create_image(0, 0, anchor="nw")
 
         self.status_var = tk.StringVar()
-        self.status_label = tk.Label(root, textvariable=self.status_var, font=("Consolas", 10, "bold"), fg="#ff8fb6", bg="#111116", pady=8)
+        self.status_label = tk.Label(root, textvariable=self.status_var, font=("Consolas", 10, "bold"), fg="#ff70a6", bg="#0d0914", pady=8)
         self.status_label.pack(side="bottom", fill="x")
 
         root.bind("<space>", self.toggle_play)
@@ -736,17 +790,20 @@ if __name__ == "__main__":
         f.write("@echo off\npython run_tellmewhy.py\npause\n")
 
     # 6. Tạo Web Player tell_me_why.html hoàn chỉnh
-    print("Đang tạo tell_me_why.html chuẩn Mobile Full-Height...")
+    print("Đang tạo tell_me_why.html chuẩn Mobile Full-Height & Audio Equalizer...")
     frames_b64 = base64.b64encode(raw_all_bytes).decode('ascii')
     with open(mp3_path, "rb") as af:
         audio_b64 = base64.b64encode(af.read()).decode('ascii')
+
+    # Chuyển mảng chiều cao thanh nhạc thành JSON
+    bars_json = json.dumps(bar_heights_per_frame)
 
     html_code = f'''<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TELL ME WHY 💖 - Dương Domic (Animation Player)</title>
+    <title>TELL ME WHY 💔 - Dương Domic (Smoking & Car Drive Animation)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -773,7 +830,7 @@ if __name__ == "__main__":
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(ellipse at 50% 30%, #171026 0%, #07040d 100%);
+            background: radial-gradient(ellipse at 50% 30%, #150d24 0%, #06030c 100%);
             font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
             color: var(--text-main);
             touch-action: manipulation;
@@ -806,7 +863,7 @@ if __name__ == "__main__":
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: rgba(22, 14, 38, 0.82);
+            background: rgba(20, 13, 34, 0.85);
             border: 1px solid rgba(255, 105, 180, 0.28);
             border-radius: 24px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(255, 77, 141, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15);
@@ -1099,9 +1156,9 @@ if __name__ == "__main__":
 
     <div class="app-card">
         <div class="header">
-            <div class="badge">✨ TELL ME WHY ✨</div>
+            <div class="badge">💔 TELL ME WHY 💔</div>
             <div class="song-title">TELL ME WHY</div>
-            <div class="song-artist">Dương Domic</div>
+            <div class="song-artist">Dương Domic • Feeling Soundzz</div>
         </div>
 
         <div class="screen-wrapper" id="screenWrapper">
@@ -1110,7 +1167,7 @@ if __name__ == "__main__":
                 <div class="play-btn-circle">
                     <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </div>
-                <div class="play-btn-text" id="playBtnText">Chạm để lắng nghe 💖</div>
+                <div class="play-btn-text" id="playBtnText">Chạm để lắng nghe 💔</div>
             </div>
         </div>
 
@@ -1140,6 +1197,7 @@ if __name__ == "__main__":
         const NUM_FRAMES = {NUM_FRAMES};
         const FRAME_DURATION = 0.070;
         const TOTAL_DURATION = {NUM_FRAMES * 0.070:.2f};
+        const EQUALIZER_BARS = {bars_json};
 
         const KARAOKE_TIMED_PHRASES = [
             {{
@@ -1191,7 +1249,7 @@ if __name__ == "__main__":
                 lines: [
                     [{{t: 21.6, w: "✨"}}, {{t: 22.0, w: "TELL"}}, {{t: 22.4, w: "ME"}}, {{t: 22.8, w: "WHY"}}, {{t: 23.2, w: "✨"}}],
                     [{{t: 23.6, w: "Dương"}}, {{t: 24.0, w: "Domic"}}],
-                    [{{t: 24.5, w: "Vẫn"}}, {{t: 24.9, w: "còn"}}, {{t: 25.3, w: "thương"}}, {{t: 25.7, w: "nhau!"}}, {{t: 25.9, w: "💖"}}]
+                    [{{t: 24.5, w: "Vẫn"}}, {{t: 24.9, w: "còn"}}, {{t: 25.3, w: "thương"}}, {{t: 25.7, w: "nhau..."}}, {{t: 25.9, w: "💖"}}]
                 ]
             }}
         ];
@@ -1257,165 +1315,6 @@ if __name__ == "__main__":
             return {{ action: active.action, lines }};
         }}
 
-        // Helper vẽ nhân vật vector HD
-        function drawBoy(ctx, bx, by, S, opts = {{}}) {{
-            const eye = opts.eye || 'dot';
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(bx * S, by * S, 5 * S, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Tóc ngắn
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.moveTo((bx - 5) * S, (by - 2) * S);
-            ctx.lineTo((bx - 6) * S, (by - 6) * S);
-            ctx.lineTo(bx * S, (by - 7.5) * S);
-            ctx.lineTo((bx + 5) * S, (by - 5) * S);
-            ctx.lineTo((bx + 5) * S, (by - 1) * S);
-            ctx.closePath();
-            ctx.fill();
-
-            // Mắt
-            if (eye === 'blink') {{
-                ctx.beginPath();
-                ctx.moveTo((bx - 3) * S, by * S);
-                ctx.lineTo((bx - 1) * S, (by + 1) * S);
-                ctx.moveTo((bx + 1) * S, by * S);
-                ctx.lineTo((bx + 3) * S, (by + 1) * S);
-                ctx.stroke();
-            }} else {{
-                ctx.beginPath();
-                ctx.arc((bx - 2) * S, by * S, S * 0.85, 0, Math.PI * 2);
-                ctx.arc((bx + 2) * S, by * S, S * 0.85, 0, Math.PI * 2);
-                ctx.fill();
-            }}
-
-            // Thân
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.roundRect((bx - 4) * S, (by + 7) * S, 8 * S, 7.5 * S, 2 * S);
-            ctx.fill();
-            ctx.stroke();
-
-            // Tay
-            if (opts.armR) {{
-                ctx.beginPath();
-                ctx.moveTo(opts.armR[0][0] * S, opts.armR[0][1] * S);
-                ctx.lineTo(opts.armR[1][0] * S, opts.armR[1][1] * S);
-                ctx.stroke();
-            }} else {{
-                ctx.beginPath();
-                ctx.moveTo((bx + 4) * S, (by + 9) * S);
-                ctx.lineTo((bx + 7) * S, (by + 14) * S);
-                ctx.stroke();
-            }}
-
-            if (opts.armL) {{
-                ctx.beginPath();
-                ctx.moveTo(opts.armL[0][0] * S, opts.armL[0][1] * S);
-                ctx.lineTo(opts.armL[1][0] * S, opts.armL[1][1] * S);
-                ctx.stroke();
-            }} else {{
-                ctx.beginPath();
-                ctx.moveTo((bx - 4) * S, (by + 9) * S);
-                ctx.lineTo((bx - 7) * S, (by + 14) * S);
-                ctx.stroke();
-            }}
-
-            // Chân
-            ctx.beginPath();
-            ctx.moveTo((bx - 2) * S, (by + 15) * S);
-            ctx.lineTo((bx - 2) * S, 53.5 * S);
-            ctx.moveTo((bx + 2) * S, (by + 15) * S);
-            ctx.lineTo((bx + 2) * S, 53.5 * S);
-            ctx.stroke();
-        }}
-
-        function drawGirl(ctx, gx, gy, S, opts = {{}}) {{
-            const eye = opts.eye || 'dot';
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(gx * S, gy * S, 5 * S, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Tóc dài hai bên
-            ctx.beginPath();
-            ctx.arc(gx * S, (gy - 2) * S, 5.5 * S, Math.PI, 0);
-            ctx.moveTo((gx - 5.5) * S, (gy - 2) * S);
-            ctx.lineTo((gx - 6.5) * S, (gy + 7) * S);
-            ctx.moveTo((gx + 5.5) * S, (gy - 2) * S);
-            ctx.lineTo((gx + 6.5) * S, (gy + 7) * S);
-            ctx.stroke();
-
-            // Nơ cài tóc
-            if (opts.bow) {{
-                ctx.fillStyle = '#ff4d8d';
-                ctx.beginPath();
-                ctx.moveTo((gx + 4) * S, (gy - 5) * S);
-                ctx.lineTo((gx + 8) * S, (gy - 7) * S);
-                ctx.lineTo((gx + 8) * S, (gy - 2) * S);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }}
-
-            // Mắt
-            ctx.fillStyle = '#000000';
-            if (eye === 'blink') {{
-                ctx.beginPath();
-                ctx.moveTo((gx - 3) * S, gy * S);
-                ctx.lineTo((gx - 1) * S, (gy + 1) * S);
-                ctx.moveTo((gx + 1) * S, gy * S);
-                ctx.lineTo((gx + 3) * S, (gy + 1) * S);
-                ctx.stroke();
-            }} else if (eye === 'happy') {{
-                ctx.beginPath();
-                ctx.arc((gx - 2) * S, gy * S, S * 1.5, Math.PI, 0);
-                ctx.arc((gx + 2) * S, gy * S, S * 1.5, Math.PI, 0);
-                ctx.stroke();
-            }} else {{
-                ctx.beginPath();
-                ctx.arc((gx - 2) * S, gy * S, S * 0.85, 0, Math.PI * 2);
-                ctx.arc((gx + 2) * S, gy * S, S * 0.85, 0, Math.PI * 2);
-                ctx.fill();
-            }}
-
-            // Váy xòe
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.moveTo(gx * S, (gy + 7) * S);
-            ctx.lineTo((gx - 5.5) * S, (gy + 15) * S);
-            ctx.lineTo((gx + 5.5) * S, (gy + 15) * S);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Tay
-            if (opts.armL) {{
-                ctx.beginPath();
-                ctx.moveTo(opts.armL[0][0] * S, opts.armL[0][1] * S);
-                ctx.lineTo(opts.armL[1][0] * S, opts.armL[1][1] * S);
-                ctx.stroke();
-            }}
-            if (opts.armR) {{
-                ctx.beginPath();
-                ctx.moveTo(opts.armR[0][0] * S, opts.armR[0][1] * S);
-                ctx.lineTo(opts.armR[1][0] * S, opts.armR[1][1] * S);
-                ctx.stroke();
-            }}
-
-            // Chân
-            ctx.beginPath();
-            ctx.moveTo((gx - 2) * S, (gy + 15.5) * S);
-            ctx.lineTo((gx - 2) * S, 53.5 * S);
-            ctx.moveTo((gx + 2) * S, (gy + 15.5) * S);
-            ctx.lineTo((gx + 2) * S, 53.5 * S);
-            ctx.stroke();
-        }}
-
         function drawHeart(ctx, x, y, size, S, fill = true) {{
             ctx.save();
             ctx.fillStyle = '#ff4d8d';
@@ -1479,8 +1378,7 @@ if __name__ == "__main__":
             const S = Math.min(canvas.width / 128.0, canvas.height / 64.0);
             const offsetX = Math.round((canvas.width - 128 * S) / 2);
             const offsetY = Math.round((canvas.height - 64 * S) / 2);
-            const f = Math.floor(cur_t / 0.070);
-            const isBlinking = (f % 40 === 0 || f % 40 === 1);
+            const f = Math.min(NUM_FRAMES - 1, Math.floor(cur_t / 0.070));
             const beatBounce = Math.abs(Math.sin(cur_t * Math.PI * 2.1)) * 1.5;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1496,21 +1394,25 @@ if __name__ == "__main__":
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            // 1. Đường đất chạy ngang tràn viền
+            // 1. Đường đất chạy ngang tràn viền tại Y = 53
             ctx.beginPath();
-            ctx.moveTo(-offsetX, 54 * S);
-            ctx.lineTo(canvas.width - offsetX, 54 * S);
+            ctx.moveTo(-offsetX, 53 * S);
+            ctx.lineTo(canvas.width - offsetX, 53 * S);
             ctx.stroke();
 
-            // 2. Cỏ hoa
-            [6, 18, 42, 50, 115, 122].forEach(gx => {{
-                ctx.beginPath();
-                ctx.moveTo(gx * S, 53.5 * S);
-                ctx.lineTo(gx * S, 50.5 * S);
-                ctx.stroke();
-            }});
+            // 2. EQUALIZER BARS NHẢY THEO NHẠC DƯỚI ĐƯỜNG ĐẤT (Y: 55 đến 63)
+            const currentBars = EQUALIZER_BARS[f] || [];
+            ctx.fillStyle = '#111827';
+            for (let b = 0; b < 24; b++) {{
+                const bh = currentBars[b] || 1;
+                const bx = (4 + b * 5) * S;
+                const bw = 3 * S;
+                const by = (63 - bh) * S;
+                const bHeight = bh * S;
+                ctx.fillRect(bx, by, bw, bHeight);
+            }}
 
-            // 3. Vách ngăn dải chấm
+            // 3. Vách ngăn dải chấm ở giữa
             ctx.fillStyle = '#000000';
             for (let dy = 6; dy < 50; dy += 4) {{
                 ctx.beginPath();
@@ -1522,8 +1424,8 @@ if __name__ == "__main__":
             const {{ action, lines }} = getActiveKaraoke(cur_t);
             const text_x = 92 * S;
             const y_starts = lines.length === 2 
-                ? [22 * S, 36 * S]
-                : (lines.length === 3 ? [17 * S, 29 * S, 41 * S] : [11 * S, 21 * S, 31 * S, 41 * S]);
+                ? [20 * S, 34 * S]
+                : (lines.length === 3 ? [15 * S, 27 * S, 39 * S] : [9 * S, 19 * S, 29 * S, 39 * S]);
 
             const fontSize = Math.round(S * 3.6);
             ctx.font = `bold ${{fontSize}}px "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
@@ -1537,210 +1439,440 @@ if __name__ == "__main__":
                 }}
             }});
 
-            // 5. Diễn hoạt nhân vật bên trái (X: 0..55)
-            if (action === 1) {{
-                // ACTION 1: Từng cơn đau tăng dần lên (Ôm gối, trăng khuyết)
-                const bx = 26;
-                const by = 38 - beatBounce;
+            // Hạt mưa rơi nhẹ
+            ctx.strokeStyle = '#000000';
+            [8, 22, 35, 48].forEach((rx, s_idx) => {{
+                const ry = ((f * 3 + (s_idx + 1) * 11) % 44) + 6;
+                if (ry < 52) {{
+                    ctx.beginPath();
+                    ctx.moveTo(rx * S, ry * S);
+                    ctx.lineTo((rx - 1) * S, (ry + 2.5) * S);
+                    ctx.stroke();
+                }}
+            }});
 
-                // Trăng khuyết
+            // 5. DIỄN HOẠT CỰC BUỒN BÊN TRÁI (X: 0..55)
+            if (action === 1) {{
+                // ACTION 1: Hút thuốc dưới cột đèn đường đêm mưa
+                const bx = 28;
+                const by = 31 - beatBounce;
+
+                // Cột đèn
                 ctx.beginPath();
-                ctx.arc(16 * S, 14 * S, 6 * S, Math.PI * 0.3, Math.PI * 1.5);
-                ctx.arc(19 * S, 14 * S, 5 * S, Math.PI * 1.4, Math.PI * 0.4, true);
+                ctx.moveTo(8 * S, 12 * S);
+                ctx.lineTo(8 * S, 53 * S);
+                ctx.moveTo(7 * S, 12 * S);
+                ctx.lineTo(14 * S, 8 * S);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(15 * S, 12 * S, 4 * S, Math.PI, 0);
                 ctx.stroke();
 
-                // Nam ngồi ôm gối
+                // Quầng sáng mờ từ đèn
+                ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                ctx.beginPath();
+                ctx.moveTo(15 * S, 12 * S);
+                ctx.lineTo(0, 53 * S);
+                ctx.lineTo(24 * S, 53 * S);
+                ctx.closePath();
+                ctx.fill();
+
+                // Chàng trai
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(bx * S, by * S, 4.5 * S, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
 
-                // Tóc
-                ctx.beginPath();
-                ctx.moveTo((bx - 4.5) * S, (by - 2) * S);
-                ctx.lineTo((bx + 4.5) * S, (by - 3) * S);
-                ctx.stroke();
-
                 // Mắt nhắm buồn
                 ctx.beginPath();
                 ctx.moveTo((bx - 3) * S, by * S);
                 ctx.lineTo((bx - 1) * S, (by + 1) * S);
-                ctx.moveTo((bx + 1) * S, by * S);
-                ctx.lineTo((bx + 3) * S, (by + 1) * S);
                 ctx.stroke();
 
-                // Thân cuộn tròn
+                // Áo măng-tô
                 ctx.beginPath();
-                ctx.ellipse(bx * S, (by + 9) * S, 5 * S, 5.5 * S, 0, 0, Math.PI * 2);
+                ctx.moveTo((bx - 4) * S, (by + 6) * S);
+                ctx.lineTo((bx + 4) * S, (by + 6) * S);
+                ctx.lineTo((bx + 5.5) * S, (by + 16) * S);
+                ctx.lineTo((bx - 5.5) * S, (by + 16) * S);
+                ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
 
-                // Tim rạn nứt
-                drawHeart(ctx, bx + 9, by - 2, 2.5, S);
+                // Tay cầm điếu thuốc
+                ctx.beginPath();
+                ctx.moveTo((bx + 3) * S, (by + 8) * S);
+                ctx.lineTo((bx + 6) * S, (by + 2) * S);
+                ctx.lineTo((bx + 10) * S, (by + 1) * S);
+                ctx.stroke();
+
+                // Tàn thuốc đỏ nhấp nháy
+                ctx.fillStyle = '#ff4d8d';
+                ctx.beginPath();
+                ctx.arc((bx + 10) * S, (by + 1) * S, 1.2 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Khói thuốc bay lượn
+                ctx.strokeStyle = '#000000';
+                for (let k = 1; k < 8; k++) {{
+                    const sy = (by - k * 2.2) * S;
+                    const sx = (bx + 10 + Math.sin(f * 0.35 + k * 0.8) * (k * 0.8)) * S;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, S * (0.4 + k * 0.15), 0, Math.PI * 2);
+                    ctx.stroke();
+                }}
+
+                // Chân
+                ctx.beginPath();
+                ctx.moveTo((bx - 2) * S, (by + 16) * S);
+                ctx.lineTo((bx - 2) * S, 53 * S);
+                ctx.moveTo((bx + 2) * S, (by + 16) * S);
+                ctx.lineTo((bx + 2) * S, 53 * S);
+                ctx.stroke();
 
             }} else if (action === 2) {{
-                // ACTION 2: Thời gian trôi âm thầm đếm (Bước đi, đồng hồ cát)
-                const bx = 22;
-                const by = 31 - beatBounce;
+                // ACTION 2: Rít thuốc, nhả khói thành vòng tròn (Smoke Rings)
+                const bx = 20;
+                const by = 30 - beatBounce;
+
+                // Đầu ngửa nhìn nghiêng
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Tóc
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo((bx - 5) * S, (by - 2) * S);
+                ctx.lineTo((bx - 6) * S, (by - 6) * S);
+                ctx.lineTo(bx * S, (by - 7) * S);
+                ctx.lineTo((bx + 4) * S, (by - 3) * S);
+                ctx.closePath();
+                ctx.fill();
+
+                // Mắt nghiêng
+                ctx.beginPath();
+                ctx.arc((bx + 1) * S, by * S, 0.8 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Thân
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.roundRect((bx - 4) * S, (by + 6) * S, 8 * S, 10 * S, 2 * S);
+                ctx.fill();
+                ctx.stroke();
+
+                // Điếu thuốc kẹp trên tay
+                ctx.beginPath();
+                ctx.moveTo((bx + 3) * S, (by + 8) * S);
+                ctx.lineTo((bx + 6) * S, (by + 12) * S);
+                ctx.lineTo((bx + 9) * S, (by + 13) * S);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4d8d';
+                ctx.beginPath();
+                ctx.arc((bx + 9) * S, (by + 13) * S, 1.2 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 2 vòng khói tròn (Smoke rings)
+                ctx.strokeStyle = '#000000';
+                const ring_phase = (f * 0.8) % 24;
+                const r1_y = (by - 2 - ring_phase * 0.6) * S;
+                const r1_x = (bx + 8 + ring_phase * 0.8) * S;
+                ctx.beginPath();
+                ctx.ellipse(r1_x, r1_y, 3 * S, 1.8 * S, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                const r2_y = (by - 6 - ((ring_phase + 10) % 24) * 0.6) * S;
+                const r2_x = (bx + 14 + ((ring_phase + 10) % 24) * 0.8) * S;
+                ctx.beginPath();
+                ctx.ellipse(r2_x, r2_y, 4.2 * S, 2.5 * S, 0, 0, Math.PI * 2);
+                ctx.stroke();
 
                 // Đồng hồ cát
                 ctx.beginPath();
-                ctx.moveTo(33 * S, 8 * S);
-                ctx.lineTo(43 * S, 8 * S);
-                ctx.lineTo(38 * S, 14 * S);
-                ctx.lineTo(43 * S, 20 * S);
-                ctx.lineTo(33 * S, 20 * S);
-                ctx.lineTo(38 * S, 14 * S);
+                ctx.moveTo(40 * S, 8 * S);
+                ctx.lineTo(50 * S, 8 * S);
+                ctx.lineTo(45 * S, 14 * S);
+                ctx.lineTo(50 * S, 20 * S);
+                ctx.lineTo(40 * S, 20 * S);
+                ctx.lineTo(45 * S, 14 * S);
                 ctx.closePath();
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
                 ctx.stroke();
 
-                drawBoy(ctx, bx, by, S, {{ eye: isBlinking ? 'blink' : 'dot' }});
-
-                // Khăn len bay
-                const scarf_wave = Math.sin(f * 0.4) * 2;
+                // Chân
                 ctx.beginPath();
-                ctx.moveTo((bx - 4) * S, (by + 8) * S);
-                ctx.lineTo((bx - 9) * S, (by + 9 + scarf_wave) * S);
+                ctx.moveTo((bx - 2) * S, (by + 16) * S);
+                ctx.lineTo((bx - 2) * S, 53 * S);
+                ctx.moveTo((bx + 2) * S, (by + 16) * S);
+                ctx.lineTo((bx + 2) * S, 53 * S);
                 ctx.stroke();
 
             }} else if (action === 3) {{
-                // ACTION 3: Nỗi cô đơn ghé qua đêm nay (Với tay tìm bóng hình)
-                const bx = 18;
-                const gx = 42;
-                const by = 31 - beatBounce;
-                const gy = 31;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 4, by + 9], [bx + 11, by + 7]]
-                }});
-
-                // Nữ xa xăm
-                drawGirl(ctx, gx, gy, S, {{ bow: true, eye: 'blink' }});
-
-                // Mây đêm
-                ctx.beginPath();
-                ctx.ellipse(28 * S, 10 * S, 8 * S, 4 * S, 0, 0, Math.PI * 2);
+                // ACTION 3: LÁI XE TRONG ĐÊM MƯA CÔ ĐỘC (NIGHT DRIVE)
+                const car_y = 42 * S;
+                // Thân xe
                 ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.rect(6 * S, car_y, 42 * S, 7 * S);
                 ctx.fill();
                 ctx.stroke();
+
+                // Mui xe & kính
+                ctx.beginPath();
+                ctx.moveTo(14 * S, car_y);
+                ctx.lineTo(20 * S, car_y - 9 * S);
+                ctx.lineTo(36 * S, car_y - 9 * S);
+                ctx.lineTo(42 * S, car_y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Kính xe trong suốt
+                ctx.fillStyle = 'rgba(0,0,0,0.06)';
+                ctx.beginPath();
+                ctx.moveTo(20 * S, car_y - 1 * S);
+                ctx.lineTo(22 * S, car_y - 8 * S);
+                ctx.lineTo(34 * S, car_y - 8 * S);
+                ctx.lineTo(38 * S, car_y - 1 * S);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Người lái xe bên trong
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(28 * S, car_y - 4 * S, 3 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Tay lái & điếu thuốc gác cửa sổ
+                ctx.beginPath();
+                ctx.moveTo(27 * S, car_y - 2 * S);
+                ctx.lineTo(20 * S, car_y - 3 * S);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4d8d';
+                ctx.beginPath();
+                ctx.arc(19 * S, car_y - 3 * S, 1 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Khói thuốc bay lùi về sau
+                ctx.strokeStyle = '#000000';
+                for (let k = 1; k < 6; k++) {{
+                    ctx.beginPath();
+                    ctx.arc((18 - k * 2.5) * S, (car_y - 3 * S - Math.sin(f * 0.5 + k) * 2 * S), 0.8 * S, 0, Math.PI * 2);
+                    ctx.stroke();
+                }}
+
+                // Bánh xe
+                [16, 40].forEach(wx => {{
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(wx * S, car_y + 7 * S, 4.5 * S, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Vành xe xoay
+                    ctx.beginPath();
+                    ctx.arc(wx * S, car_y + 7 * S, 1.8 * S, 0, Math.PI * 2);
+                    ctx.stroke();
+                }});
+
+                // Đèn pha xe chiếu sáng phía trước
+                ctx.fillStyle = 'rgba(255, 77, 141, 0.15)';
+                ctx.beginPath();
+                ctx.moveTo(48 * S, car_y + 2 * S);
+                ctx.lineTo(55 * S, car_y - 3 * S);
+                ctx.lineTo(55 * S, car_y + 8 * S);
+                ctx.closePath();
+                ctx.fill();
 
             }} else if (action === 4) {{
-                // ACTION 4: Đêm qua đêm nay anh chẳng muốn quay lại (Quay lưng trong gió)
-                const bx = 20;
-                const gx = 36;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
+                // ACTION 4: CẦN GẠT NƯỚC KÍNH CHẮN GIÓ & GƯƠNG CHIẾU HẬU
+                // Gương chiếu hậu
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.roundRect(14 * S, 8 * S, 28 * S, 12 * S, 3 * S);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(28 * S, 4 * S);
+                ctx.lineTo(28 * S, 8 * S);
+                ctx.stroke();
 
-                drawBoy(ctx, bx, by, S, {{
-                    eye: 'dot',
-                    armL: [[bx - 4, by + 9], [bx - 7, by + 13]]
-                }});
+                // Đôi mắt nhìn trong gương
+                ctx.beginPath();
+                ctx.arc(22 * S, 14 * S, 2 * S, 0, Math.PI);
+                ctx.arc(34 * S, 14 * S, 2 * S, 0, Math.PI);
+                ctx.stroke();
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(22 * S, 14 * S, 0.8 * S, 0, Math.PI * 2);
+                ctx.arc(34 * S, 14 * S, 0.8 * S, 0, Math.PI * 2);
+                ctx.fill();
 
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: 'dot',
-                    armR: [[gx + 4, gy + 9], [gx + 7, gy + 13]]
-                }});
+                // Kính chắn gió bên dưới
+                ctx.strokeStyle = '#000000';
+                ctx.strokeRect(4 * S, 24 * S, 48 * S, 28 * S);
 
-                // Gió thổi ở giữa
-                const wind_x = 28 + Math.sin(f * 0.5) * 3;
-                drawStar(ctx, wind_x, 24, 2.2, S);
+                // Cần gạt nước gạt qua lại
+                const wiper_x = 28 + Math.sin(f * 0.45) * 16;
+                ctx.beginPath();
+                ctx.moveTo(28 * S, 51 * S);
+                ctx.lineTo(wiper_x * S, 28 * S);
+                ctx.stroke();
+                // Thanh gạt cao su
+                ctx.lineWidth = lw * 1.5;
+                ctx.beginPath();
+                ctx.moveTo((wiper_x - 5) * S, 28 * S);
+                ctx.lineTo((wiper_x + 5) * S, 28 * S);
+                ctx.stroke();
+                ctx.lineWidth = lw;
 
             }} else if (action === 5) {{
-                // ACTION 5: Phải xa em anh nào muốn (Che ô, giọt lệ rơi)
-                const bx = 18;
-                const gx = 36;
-                const by = 31;
-                const gy = 31;
-
-                // Ô che
-                ctx.beginPath();
-                ctx.arc(28 * S, 21 * S, 14 * S, Math.PI, 0);
-                ctx.closePath();
+                // ACTION 5: ĐỖ XE VEN ĐƯỜNG, TỰA XE HÚT THUỐC DƯỚI MƯA
+                // Xe đỗ góc trái
                 ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.rect(2 * S, 40 * S, 24 * S, 8 * S);
                 ctx.fill();
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.moveTo(28 * S, 21 * S);
-                ctx.lineTo(28 * S, 36 * S);
+                ctx.moveTo(6 * S, 40 * S);
+                ctx.lineTo(12 * S, 33 * S);
+                ctx.lineTo(22 * S, 33 * S);
+                ctx.lineTo(26 * S, 40 * S);
+                ctx.closePath();
+                ctx.fill();
                 ctx.stroke();
 
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 4, by + 9], [28, 33]]
-                }});
+                // Chàng trai tựa xe
+                const bx = 32;
+                const by = 31;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(bx * S, by * S, 4.5 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
 
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: 'happy'
-                }});
+                // Mắt nhắm buồn cúi gằm
+                ctx.beginPath();
+                ctx.moveTo((bx - 3) * S, by * S);
+                ctx.lineTo((bx - 1) * S, (by + 1) * S);
+                ctx.stroke();
 
-                // Trái tim vỡ lơ lửng
-                drawHeart(ctx, 28, 9, 3.2, S);
+                // Áo tựa nghiêng
+                ctx.beginPath();
+                ctx.moveTo((bx - 4) * S, (by + 6) * S);
+                ctx.lineTo((bx + 4) * S, (by + 6) * S);
+                ctx.lineTo((bx + 5.5) * S, (by + 16) * S);
+                ctx.lineTo((bx - 5.5) * S, (by + 16) * S);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Tay chụm che điếu thuốc
+                ctx.beginPath();
+                ctx.moveTo((bx - 3) * S, (by + 8) * S);
+                ctx.lineTo((bx + 4) * S, (by + 4) * S);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4d8d';
+                ctx.beginPath();
+                ctx.arc((bx + 5) * S, (by + 4) * S, 1.2 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Trái tim vỡ nhói đau
+                drawHeart(ctx, bx + 10, by - 3, 3 * S, 1, false);
+
+                // Chân tựa xe
+                ctx.strokeStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo((bx - 2) * S, (by + 16) * S);
+                ctx.lineTo((bx - 5) * S, 53 * S);
+                ctx.moveTo((bx + 2) * S, (by + 16) * S);
+                ctx.lineTo((bx + 1) * S, 53 * S);
+                ctx.stroke();
 
             }} else if (action === 6) {{
-                // ACTION 6: Vì chia đôi vẫn còn thương (Chạm tay, tim hàn gắn)
-                const bx = 20;
-                const gx = 36;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
+                // ACTION 6: NGỒI TRÊN XE, NHÌN MÀN HÌNH ĐIỆN THOẠI PHÁT SÁNG
+                const bx = 24;
+                const by = 28 - beatBounce;
 
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 4, by + 9], [28, 39]]
-                }});
+                // Thân xe dưới chân
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(8 * S, 46 * S, 40 * S, 7 * S);
+                ctx.strokeRect(8 * S, 46 * S, 40 * S, 7 * S);
 
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armL: [[gx - 4, gy + 9], [28, 39]]
-                }});
-
-                // Nắm tay
+                // Chàng trai
+                ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
-                ctx.arc(28 * S, 39 * S, S * 1.2, 0, Math.PI * 2);
+                ctx.arc(bx * S, by * S, 4.5 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.roundRect((bx - 4) * S, (by + 6) * S, 8 * S, 10 * S, 2 * S);
+                ctx.fill();
+                ctx.stroke();
+
+                // Màn hình điện thoại phát sáng
+                ctx.fillStyle = '#ff4d8d';
+                ctx.fillRect((bx + 7) * S, (by + 7) * S, 5 * S, 7 * S);
+                ctx.strokeRect((bx + 7) * S, (by + 7) * S, 5 * S, 7 * S);
+
+                // Điếu thuốc kẹp trên tay buông xuống
+                ctx.strokeStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo((bx - 3) * S, (by + 8) * S);
+                ctx.lineTo((bx - 8) * S, (by + 13) * S);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4d8d';
+                ctx.beginPath();
+                ctx.arc((bx - 8) * S, (by + 13) * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Trái tim lớn đập rộn ràng
-                const heartSize = 3.8 + beatBounce * 1.4;
-                const hy = 18 - Math.sin(f * 0.3) * 2;
-                drawHeart(ctx, 28, hy, heartSize, S);
+                // Trái tim lớn đập phập phồng đau nhói
+                const heartSize = 4.2 + beatBounce * 1.5;
+                const hy = 13 - Math.sin(f * 0.3) * 2;
+                drawHeart(ctx, 40, hy, heartSize, S);
 
             }} else if (action === 7) {{
-                // ACTION 7: OUTRO & FINALE (Ôm ấm áp, pháo hoa)
-                const bx = 24;
-                const gx = 32;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
-
-                // Thân ôm
+                // ACTION 7: XE LĂN BÁNH XA DẦN VÀO MÀN ĐÊM VÔ TẬN
+                // Con đường hun hút về điểm vô cực (28, 26)
                 ctx.beginPath();
-                ctx.rect((bx - 4) * S, (by + 7) * S, 16 * S, 8 * S);
+                ctx.moveTo(28 * S, 26 * S);
+                ctx.lineTo(6 * S, 53 * S);
+                ctx.moveTo(28 * S, 26 * S);
+                ctx.lineTo(50 * S, 53 * S);
+                ctx.stroke();
+
+                // Chiếc xe nhỏ dần lùi về phía xa
+                const car_dist = Math.sin(f * 0.1) * 2;
+                const cx = 28;
+                const cy = 38 + car_dist;
                 ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.rect((cx - 8) * S, cy * S, 16 * S, 6 * S);
                 ctx.fill();
                 ctx.stroke();
 
-                // Đầu Nam & Nữ
-                drawBoy(ctx, bx, by, S, {{ eye: isBlinking ? 'blink' : 'dot' }});
-                drawGirl(ctx, gx, gy, S, {{ bow: true, eye: isBlinking ? 'blink' : 'dot' }});
-
-                // Bóng bay trái tim
-                const blx = 28 + Math.sin(f * 0.25) * 3;
-                const bly = 10;
-                drawHeart(ctx, blx, bly, 4.2, S);
+                // Đèn hậu đỏ
+                ctx.fillStyle = '#ff4d8d';
                 ctx.beginPath();
-                ctx.moveTo(blx * S, (bly + 4.2) * S);
-                ctx.lineTo(28 * S, 24 * S);
+                ctx.arc((cx - 6) * S, (cy + 3) * S, 1.5 * S, 0, Math.PI * 2);
+                ctx.arc((cx + 6) * S, (cy + 3) * S, 1.5 * S, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Khói xả ống pô
+                ctx.strokeStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc((cx - 8) * S, (cy + 6) * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Pháo hoa sao lấp lánh
-                const fx_y = 12 + (f % 5);
-                drawStar(ctx, 8, fx_y, 3.5, S);
-                drawStar(ctx, 48, fx_y + 2, 3.5, S);
+                // Sao lấp lánh trên bầu trời
+                drawStar(ctx, 12, 10, 2.5, S);
+                drawStar(ctx, 44, 8, 2.5, S);
             }}
 
             ctx.restore();
@@ -1788,7 +1920,7 @@ if __name__ == "__main__":
         function pause() {{
             isPlaying = false;
             playOverlay.classList.remove('hidden');
-            playBtnText.textContent = 'Tiếp tục 💖';
+            playBtnText.textContent = 'Tiếp tục 💔';
             iconPlay.classList.remove('hidden');
             iconPause.classList.add('hidden');
 
@@ -1849,14 +1981,13 @@ if __name__ == "__main__":
         f.write(html_code)
     print("Đã tạo tell_me_why.html thành công!")
 
-    # Cập nhật index.html để có thể mở ngay Tell Me Why
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_code)
-    print("Đã cập nhật index.html để phát Tell Me Why mặc định!")
+    print("Đã cập nhật index.html thành công!")
 
-    print("\n=== HOÀN TẤT TOÀN BỘ SẢN PHẨM 'TELL ME WHY' (DƯƠNG DOMIC) ===")
-    print("1. tellmewhy_frames.bin (Dữ liệu OLED SSD1306)")
-    print("2. tellmewhy.gif (Ảnh GIF 384x192)")
+    print("\n=== HOÀN TẤT BỘ ANIMATION CỰC BUỒN & AUDIO EQUALIZER! ===")
+    print("1. tellmewhy_frames.bin (Dữ liệu OLED SSD1306 có equalizer)")
+    print("2. tellmewhy.gif (Ảnh GIF 384x192 khói thuốc, lái xe & thanh nhạc)")
     print("3. tell_me_why.cpp (C++ SFML độc lập)")
     print("4. run_tellmewhy.py + run_tellmewhy.bat (Trình phát Desktop native)")
     print("5. tell_me_why.html & index.html (Web Player siêu mượt Mobile Full-Height)")
