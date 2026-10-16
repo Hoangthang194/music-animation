@@ -1397,6 +1397,7 @@ if __name__ == "__main__":
             ctx.save();
             ctx.fillStyle = '#ff4d8d';
             ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.2, S * 0.35);
             ctx.beginPath();
             const topY = (y - size * 0.3) * S;
             ctx.moveTo(x * S, (y + size) * S);
@@ -1404,16 +1405,309 @@ if __name__ == "__main__":
             ctx.bezierCurveTo((x + size * 1.2) * S, topY, (x + size * 1.2) * S, (y + size * 0.2) * S, x * S, (y + size) * S);
             if (fill) ctx.fill();
             ctx.stroke();
+
+            // Vết nứt zíc-zắc ở giữa trái tim
+            ctx.beginPath();
+            ctx.moveTo(x * S, (y - size * 0.1) * S);
+            ctx.lineTo((x - 1) * S, (y + size * 0.3) * S);
+            ctx.lineTo((x + 1) * S, (y + size * 0.5) * S);
+            ctx.lineTo(x * S, (y + size) * S);
+            ctx.stroke();
             ctx.restore();
         }}
 
         function drawStar(ctx, x, y, r, S) {{
+            ctx.save();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1, S * 0.25);
             ctx.beginPath();
             ctx.moveTo(x * S, (y - r) * S);
             ctx.lineTo(x * S, (y + r) * S);
             ctx.moveTo((x - r) * S, y * S);
             ctx.lineTo((x + r) * S, y * S);
             ctx.stroke();
+            ctx.restore();
+        }}
+
+        function drawAnimeHead(ctx, bx, by, S, look = 'down') {{
+            ctx.save();
+            // Đầu & da mặt
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.4, S * 0.32);
+            ctx.beginPath();
+            ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mái tóc anime lãng tử có từng lọn rủ
+            ctx.fillStyle = '#181224';
+            ctx.beginPath();
+            ctx.moveTo((bx - 5) * S, (by - 2) * S);
+            ctx.bezierCurveTo((bx - 6) * S, (by - 7) * S, (bx - 2) * S, (by - 9) * S, (bx + 1) * S, (by - 9) * S);
+            ctx.bezierCurveTo((bx + 5) * S, (by - 8) * S, (bx + 6) * S, (by - 4) * S, (bx + 5.2) * S, (by - 1.5) * S);
+            ctx.lineTo((bx + 3.5) * S, (by - 1) * S);
+            ctx.lineTo((bx + 2.5) * S, (by + 1.2) * S); // lọn tóc mái dài
+            ctx.lineTo((bx + 1) * S, (by - 1) * S);
+            ctx.lineTo((bx - 0.5) * S, (by + 1.5) * S); // lọn tóc mái giữa
+            ctx.lineTo((bx - 2) * S, (by - 1) * S);
+            ctx.lineTo((bx - 3.5) * S, (by + 0.5) * S); // lọn tóc mái trái
+            ctx.closePath();
+            ctx.fill();
+
+            // Mắt và biểu cảm
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.2, S * 0.28);
+            if (look === 'down') {{
+                // Mắt nhìn xuống buồn
+                ctx.beginPath();
+                ctx.moveTo((bx + 0.8) * S, (by + 1.2) * S);
+                ctx.lineTo((bx + 3) * S, (by + 2) * S);
+                ctx.stroke();
+            }} else if (look === 'closed') {{
+                // Mắt nhắm
+                ctx.beginPath();
+                ctx.moveTo((bx - 1) * S, by * S);
+                ctx.lineTo((bx + 2) * S, (by + 1) * S);
+                ctx.stroke();
+            }} else {{
+                ctx.beginPath();
+                ctx.moveTo((bx + 1) * S, by * S);
+                ctx.lineTo((bx + 3) * S, by * S);
+                ctx.stroke();
+            }}
+            ctx.restore();
+        }}
+
+        function drawSportsCarSide(ctx, S) {{
+            const carY = 48 * S;
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.6, S * 0.35);
+
+            // Dáng xe thể thao coupe khí động học
+            ctx.beginPath();
+            ctx.moveTo(3 * S, carY); // cản sau
+            ctx.lineTo(3 * S, carY - 6 * S);
+            ctx.lineTo(8 * S, carY - 7 * S); // cánh gió ducktail
+            ctx.lineTo(16 * S, carY - 14 * S); // kính sau dốc
+            ctx.lineTo(26 * S, carY - 14 * S); // mui xe
+            ctx.lineTo(33 * S, carY - 7 * S); // kính chắn gió
+            ctx.lineTo(51 * S, carY - 6 * S); // nắp capo dài phẳng
+            ctx.lineTo(52 * S, carY - 2 * S); // mũi xe
+            ctx.lineTo(46 * S, carY); // cản trước
+            ctx.lineTo(42 * S, carY);
+            ctx.arc(38 * S, carY, 4.5 * S, 0, Math.PI, true); // hốc bánh trước
+            ctx.lineTo(17 * S, carY);
+            ctx.arc(13 * S, carY, 4.5 * S, 0, Math.PI, true); // hốc bánh sau
+            ctx.lineTo(3 * S, carY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Kính xe có màu tối mờ
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.12)';
+            ctx.beginPath();
+            ctx.moveTo(17 * S, carY - 7.5 * S);
+            ctx.lineTo(18 * S, carY - 12.5 * S);
+            ctx.lineTo(25 * S, carY - 12.5 * S);
+            ctx.lineTo(31 * S, carY - 7.5 * S);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            // Cột B
+            ctx.beginPath();
+            ctx.moveTo(22 * S, carY - 12.5 * S);
+            ctx.lineTo(22 * S, carY - 7.5 * S);
+            ctx.stroke();
+
+            // 2 Bánh xe lốp cao su + mâm hợp kim
+            [13, 38].forEach(wx => {{
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(wx * S, carY, 4 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#e2e8f0';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(wx * S, carY, 2.3 * S, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                // Tâm mâm
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(wx * S, carY, 0.8 * S, 0, Math.PI * 2);
+                ctx.fill();
+            }});
+            ctx.restore();
+        }}
+
+        function drawHighwayLandscape(ctx, S, f) {{
+            const vpX = 28 * S;
+            const vpY = 22 * S;
+
+            ctx.save();
+
+            // 1. Dải skyline thành phố xa xa trên đường chân trời (Cityscape ban đêm)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.12)';
+            [ [4, 7, 4], [9, 10, 5], [15, 6, 3.5], [37, 8, 4], [42, 11, 5], [48, 6, 4] ].forEach(([x, h, w]) => {{
+                ctx.fillRect(x * S, (22 - h) * S, w * S, h * S);
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect((x + 1) * S, (22 - h + 2) * S, 0.8 * S, 0.8 * S);
+                ctx.fillRect((x + 2.2) * S, (22 - h + 4) * S, 0.8 * S, 0.8 * S);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.12)';
+            }});
+
+            // 2. Mặt đường nhựa cao tốc màu xám nhạt lo-fi
+            ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath();
+            ctx.moveTo(vpX, vpY);
+            ctx.lineTo(2 * S, 53 * S);
+            ctx.lineTo(54 * S, 53 * S);
+            ctx.closePath();
+            ctx.fill();
+
+            // Gờ mép đường hai bên
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.8, S * 0.38);
+            ctx.beginPath();
+            ctx.moveTo(vpX, vpY);
+            ctx.lineTo(2 * S, 53 * S);
+            ctx.moveTo(vpX, vpY);
+            ctx.lineTo(54 * S, 53 * S);
+            ctx.stroke();
+
+            // 3. Cọc tiêu lan can phối cảnh hai bên
+            [27, 34, 43, 53].forEach(gy => {{
+                const sc = (gy - 22) / 31.0;
+                const lX = vpX - 26 * sc * S;
+                const rX = vpX + 26 * sc * S;
+                ctx.beginPath();
+                ctx.moveTo(lX, gy * S);
+                ctx.lineTo(lX, (gy - 3.8 * sc) * S);
+                ctx.moveTo(rX, gy * S);
+                ctx.lineTo(rX, (gy - 3.8 * sc) * S);
+                ctx.stroke();
+            }});
+
+            // 4. Vạch kẻ đường đứt đoạn lướt về phía trước
+            const dashShift = (f * 2.5) % 8;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = Math.max(2, S * 0.45);
+            for (let dy = 24; dy < 52; dy += 8) {{
+                const curY = dy + dashShift;
+                if (curY >= 23 && curY < 52) {{
+                    const sc = (curY - 22) / 31.0;
+                    ctx.beginPath();
+                    ctx.moveTo(vpX, curY * S);
+                    ctx.lineTo(vpX, Math.min(52 * S, (curY + 3.8 * sc) * S));
+                    ctx.stroke();
+                }}
+            }}
+
+            // 5. Trăng khuyết mềm mại & các ngôi sao
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(8 * S, 8 * S, 3.8 * S, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(10 * S, 7.2 * S, 3.4 * S, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sao lấp lánh
+            [ [18, 7], [38, 6], [48, 11], [14, 15] ].forEach(([sx, sy], sIdx) => {{
+                if ((f + sIdx * 3) % 6 < 4) {{
+                    drawStar(ctx, sx, sy, 2.2, S);
+                }}
+            }});
+
+            ctx.restore();
+        }}
+
+        function drawSportsCarRear(ctx, cx, cy, S, f) {{
+            ctx.save();
+
+            // 1. Hai lốp xe sau to bản bám đường
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(cx - 10.5 * S, cy + 5 * S, 4 * S, 3.8 * S); // lốp trái
+            ctx.fillRect(cx + 6.5 * S, cy + 5 * S, 4 * S, 3.8 * S); // lốp phải
+
+            // 2. Cản sau thể thao bè rộng
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(1.6, S * 0.35);
+            ctx.beginPath();
+            ctx.roundRect(cx - 11 * S, cy - 1 * S, 22 * S, 7.5 * S, 2 * S);
+            ctx.fill();
+            ctx.stroke();
+
+            // 3. Cabin & Kính sau dốc
+            ctx.beginPath();
+            ctx.moveTo(cx - 6 * S, cy - 6.5 * S);
+            ctx.lineTo(cx + 6 * S, cy - 6.5 * S);
+            ctx.lineTo(cx + 9 * S, cy - 1 * S);
+            ctx.lineTo(cx - 9 * S, cy - 1 * S);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Mặt kính sau màu tối
+            ctx.fillStyle = '#1e1b4b';
+            ctx.beginPath();
+            ctx.moveTo(cx - 5 * S, cy - 5.5 * S);
+            ctx.lineTo(cx + 5 * S, cy - 5.5 * S);
+            ctx.lineTo(cx + 7.5 * S, cy - 1.5 * S);
+            ctx.lineTo(cx - 7.5 * S, cy - 1.5 * S);
+            ctx.closePath();
+            ctx.fill();
+
+            // 4. Cánh gió thể thao GT Wing có 2 chân bắt cốp chắc chắn
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(cx - 7.5 * S, cy - 7.5 * S, 1.2 * S, 5.5 * S);
+            ctx.fillRect(cx + 6.3 * S, cy - 7.5 * S, 1.2 * S, 5.5 * S);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.roundRect(cx - 13 * S, cy - 8.5 * S, 26 * S, 2 * S, 1 * S);
+            ctx.fill();
+            ctx.stroke();
+
+            // 5. Dải đèn hậu LED đỏ rực phát quang
+            ctx.save();
+            ctx.shadowColor = '#ff1744';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#ff1744';
+            ctx.fillRect(cx - 9.8 * S, cy + 0.8 * S, 19.6 * S, 2.2 * S);
+            ctx.restore();
+
+            // 6. Biển số xe ở giữa
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.fillRect(cx - 3.5 * S, cy + 4 * S, 7 * S, 2.5 * S);
+            ctx.strokeRect(cx - 3.5 * S, cy + 4 * S, 7 * S, 2.5 * S);
+
+            // 7. Ống xả kép mạ crôm & khói xe
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.arc(cx - 6 * S, cy + 6.5 * S, 1.3 * S, 0, Math.PI * 2);
+            ctx.arc(cx + 6 * S, cy + 6.5 * S, 1.3 * S, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Khói xả mờ ảo bốc lên
+            const smokeShift = (f * 0.4) % 1;
+            ctx.fillStyle = 'rgba(100, 116, 139, 0.25)';
+            ctx.beginPath();
+            ctx.arc(cx - (7 + smokeShift * 2) * S, cy + (8 + smokeShift * 3) * S, (1.8 + smokeShift * 1.5) * S, 0, Math.PI * 2);
+            ctx.arc(cx + (7 + smokeShift * 2) * S, cy + (8 + smokeShift * 3) * S, (1.8 + smokeShift * 1.5) * S, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
         }}
 
         function renderPixelFrame(cur_t) {{
@@ -1484,7 +1778,6 @@ if __name__ == "__main__":
                 const bh = currentBars[b] || 1;
                 const bx = (4 + b * 5) * S;
                 const bw = 3 * S;
-                // Tô màu gradient neon (cyan -> purple -> pink)
                 const hue = 180 + (b / 24.0) * 150;
                 ctx.fillStyle = `hsl(${{hue}}, 85%, 45%)`;
                 for (let seg = 0; seg < bh; seg++) {{
@@ -1534,7 +1827,7 @@ if __name__ == "__main__":
 
             // 5. DIỄN HOẠT SIÊU CHI TIẾT BÊN TRÁI (X: 0..55)
             if (action === 1) {{
-                // ACTION 1: Cột đèn đường cổ điển & Chàng trai đứng hút thuốc
+                // ACTION 1: CỘT ĐÈN ĐƯỜNG CỔ ĐIỂN & CHÀNG TRAI ÁO KHOÁC DÀI HÚT THUỐC
                 const bx = 28;
                 const by = 28 - beatBounce;
 
@@ -1552,13 +1845,16 @@ if __name__ == "__main__":
                 ctx.stroke();
                 // Lồng đèn
                 ctx.strokeRect(14 * S, 11 * S, 4 * S, 6 * S);
-                ctx.fillStyle = '#ffb3d1';
+                ctx.fillStyle = '#fef08a';
                 ctx.beginPath();
                 ctx.arc(16 * S, 14 * S, 1.8 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Quầng sáng hình nón từ đèn
-                ctx.fillStyle = 'rgba(255, 77, 141, 0.08)';
+                // Quầng sáng ấm áp toả xuống vỉa hè
+                const lightGrad = ctx.createRadialGradient(16 * S, 14 * S, 2 * S, 16 * S, 36 * S, 24 * S);
+                lightGrad.addColorStop(0, 'rgba(254, 240, 138, 0.25)');
+                lightGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+                ctx.fillStyle = lightGrad;
                 ctx.beginPath();
                 ctx.moveTo(16 * S, 16 * S);
                 ctx.lineTo(0, 53 * S);
@@ -1567,33 +1863,11 @@ if __name__ == "__main__":
                 ctx.fill();
 
                 // Chàng trai
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+                drawAnimeHead(ctx, bx, by, S, 'closed');
 
-                // Tóc anime
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.moveTo((bx - 5) * S, (by - 2) * S);
-                ctx.lineTo((bx - 6) * S, (by - 6) * S);
-                ctx.lineTo((bx - 1) * S, (by - 9) * S);
-                ctx.lineTo((bx + 5) * S, (by - 7) * S);
-                ctx.lineTo((bx + 5) * S, (by - 2) * S);
-                ctx.lineTo((bx + 2) * S, (by - 1) * S);
-                ctx.closePath();
-                ctx.fill();
-
-                // Mắt nhắm buồn
-                ctx.beginPath();
-                ctx.moveTo((bx - 3) * S, by * S);
-                ctx.lineTo((bx - 1) * S, (by + 1) * S);
-                ctx.moveTo((bx + 1) * S, (by + 1) * S);
-                ctx.lineTo((bx + 3) * S, by * S);
-                ctx.stroke();
-
-                // Điếu thuốc
+                // Điếu thuốc trên môi
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1.4;
                 ctx.beginPath();
                 ctx.moveTo((bx + 1) * S, (by + 3) * S);
                 ctx.lineTo((bx + 6) * S, (by + 3) * S);
@@ -1603,8 +1877,8 @@ if __name__ == "__main__":
                 ctx.arc((bx + 6.8) * S, (by + 3) * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Khói thuốc bay lượn
-                ctx.strokeStyle = '#000000';
+                // Làn khói uốn lượn
+                ctx.strokeStyle = 'rgba(0,0,0,0.45)';
                 for (let k = 1; k < 9; k++) {{
                     const sy = (by + 3 - k * 2.2) * S;
                     const sx = (bx + 7 + Math.sin(f * 0.35 + k * 0.7) * (k * 0.85)) * S;
@@ -1615,6 +1889,8 @@ if __name__ == "__main__":
 
                 // Áo măng tô cổ bẻ cao
                 ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
                 ctx.beginPath();
                 ctx.moveTo((bx - 5) * S, (by + 8) * S);
                 ctx.lineTo((bx + 5) * S, (by + 8) * S);
@@ -1623,8 +1899,13 @@ if __name__ == "__main__":
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
+                // Đường chỉ cúc áo
+                ctx.beginPath();
+                ctx.moveTo(bx * S, (by + 8) * S);
+                ctx.lineTo(bx * S, (by + 19) * S);
+                ctx.stroke();
 
-                // Chân
+                // Chân & vũng nước phản chiếu
                 ctx.beginPath();
                 ctx.moveTo((bx - 3) * S, (by + 20) * S);
                 ctx.lineTo((bx - 3) * S, 53 * S);
@@ -1632,37 +1913,22 @@ if __name__ == "__main__":
                 ctx.lineTo((bx + 2) * S, 53 * S);
                 ctx.stroke();
 
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(bx * S, 52 * S, 8 * S, 1.5 * S, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
             }} else if (action === 2) {{
-                // ACTION 2: Thở vòng khói tròn (Smoke rings) & Đồng hồ cát
+                // ACTION 2: THỞ CÁC VÒNG KHÓI TRÒN (SMOKE RINGS) & ĐỒNG HỒ CÁT
                 const bx = 18;
                 const by = 28 - beatBounce;
 
-                // Đầu ngửa nhìn nghiêng
+                drawAnimeHead(ctx, bx, by, S, 'closed');
+
+                // Áo & tay kẹp điếu thuốc
                 ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Tóc
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.moveTo((bx - 6) * S, (by - 2) * S);
-                ctx.lineTo((bx - 5) * S, (by - 8) * S);
-                ctx.lineTo((bx + 1) * S, (by - 9) * S);
-                ctx.lineTo((bx + 5) * S, (by - 6) * S);
-                ctx.lineTo((bx + 5) * S, (by - 1) * S);
-                ctx.closePath();
-                ctx.fill();
-
-                // Mắt nhắm
-                ctx.beginPath();
-                ctx.moveTo(bx * S, by * S);
-                ctx.lineTo((bx + 2) * S, (by + 1) * S);
-                ctx.stroke();
-
-                // Áo & tay cầm điếu thuốc
-                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
                 ctx.beginPath();
                 ctx.roundRect((bx - 5) * S, (by + 8) * S, 10 * S, 11 * S, 2 * S);
                 ctx.fill();
@@ -1678,8 +1944,9 @@ if __name__ == "__main__":
                 ctx.arc((bx + 12) * S, (by + 11) * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 3 Vòng khói tròn bay mở rộng
-                ctx.strokeStyle = '#000000';
+                // 3 Vòng khói tròn bay mở rộng dần
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 1.4;
                 const ring_t = (f * 0.7) % 20;
                 const r1_x = (bx + 6 + ring_t * 0.5) * S;
                 const r1_y = (by + 1 - ring_t * 0.5) * S;
@@ -1694,8 +1961,10 @@ if __name__ == "__main__":
                 ctx.ellipse(r2_x, r2_y, 3.8 * S, 2.2 * S, 0, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Đồng hồ cát
+                // Đồng hồ cát tinh xảo
                 const hx = 45 * S, hy = 16 * S;
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.4, S * 0.3);
                 ctx.beginPath();
                 ctx.moveTo(hx - 6 * S, hy - 8 * S);
                 ctx.lineTo(hx + 6 * S, hy - 8 * S);
@@ -1710,6 +1979,12 @@ if __name__ == "__main__":
                 ctx.closePath();
                 ctx.stroke();
 
+                // Hạt cát chảy
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(hx, hy + (2 + (f % 4) * 1.2) * S, 0.8 * S, 0, Math.PI * 2);
+                ctx.fill();
+
                 // Chân
                 ctx.beginPath();
                 ctx.moveTo((bx - 3) * S, (by + 20) * S);
@@ -1719,84 +1994,55 @@ if __name__ == "__main__":
                 ctx.stroke();
 
             }} else if (action === 3) {{
-                // ACTION 3: XE THỂ THAO JDM CHẠY TRONG ĐÊM MƯA
-                const car_y = 39 * S;
+                // ACTION 3: XE THỂ THAO JDM LAO TRONG ĐÊM VỚI ĐÈN PHA RỌI SÁNG
+                drawSportsCarSide(ctx, S);
 
-                // Thân xe thể thao
-                ctx.fillStyle = '#ffffff';
+                // Chàng trai bên trong xe
+                ctx.fillStyle = '#181224';
                 ctx.beginPath();
-                ctx.moveTo(3 * S, car_y + 8 * S);
-                ctx.lineTo(3 * S, car_y + 2 * S);
-                ctx.lineTo(7 * S, car_y + 1 * S);
-                ctx.lineTo(14 * S, car_y - 6 * S);
-                ctx.lineTo(24 * S, car_y - 6 * S);
-                ctx.lineTo(34 * S, car_y + 2 * S);
-                ctx.lineTo(52 * S, car_y + 5 * S);
-                ctx.lineTo(52 * S, car_y + 8 * S);
-                ctx.closePath();
+                ctx.arc(24 * S, 38 * S, 2.8 * S, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.stroke();
 
-                // Cửa sổ & cột B
+                // Tay gác ra cửa sổ kẹp điếu thuốc
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1.4;
                 ctx.beginPath();
-                ctx.moveTo(21 * S, car_y - 5 * S);
-                ctx.lineTo(21 * S, car_y + 2 * S);
-                ctx.moveTo(15 * S, car_y + 1 * S);
-                ctx.lineTo(32 * S, car_y + 1 * S);
-                ctx.stroke();
-
-                // Người lái xe
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(25 * S, car_y - 3 * S, 2.5 * S, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Điếu thuốc gác cửa sổ
-                ctx.beginPath();
-                ctx.moveTo(22 * S, car_y + 1 * S);
-                ctx.lineTo(18 * S, car_y);
+                ctx.moveTo(22 * S, 41 * S);
+                ctx.lineTo(18 * S, 40 * S);
                 ctx.stroke();
                 ctx.fillStyle = '#ff4d8d';
                 ctx.beginPath();
-                ctx.arc(17 * S, car_y, 1.2 * S, 0, Math.PI * 2);
+                ctx.arc(17 * S, 40 * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Khói xe xả lùi
-                ctx.strokeStyle = '#000000';
+                // Khói thuốc bay ngược về sau theo gió
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
                 for (let k = 1; k < 6; k++) {{
                     const sx = (16 - k * 3) * S;
-                    const sy = car_y - Math.sin(f * 0.6 + k) * 2 * S;
+                    const sy = (40 - Math.sin(f * 0.6 + k) * 2) * S;
                     ctx.beginPath();
                     ctx.arc(sx, sy, 0.8 * S, 0, Math.PI * 2);
                     ctx.stroke();
                 }}
 
-                // Bánh xe nan hoa xoay
-                [13, 42].forEach(wx => {{
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(wx * S, car_y + 8 * S, 4.5 * S, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.arc(wx * S, car_y + 8 * S, 1.8 * S, 0, Math.PI * 2);
-                    ctx.stroke();
-                }});
-
-                // Đèn pha chiếu sáng
-                ctx.fillStyle = 'rgba(255, 77, 141, 0.18)';
+                // Đèn pha rọi chùm sáng lớn cắt qua màn mưa
+                const beamGrad = ctx.createLinearGradient(51 * S, 42 * S, 56 * S, 42 * S);
+                beamGrad.addColorStop(0, 'rgba(255, 230, 180, 0.45)');
+                beamGrad.addColorStop(1, 'rgba(255, 230, 180, 0.05)');
+                ctx.fillStyle = beamGrad;
                 ctx.beginPath();
-                ctx.moveTo(52 * S, car_y + 5 * S);
-                ctx.lineTo(56 * S, car_y + 1 * S);
-                ctx.lineTo(56 * S, car_y + 10 * S);
+                ctx.moveTo(51 * S, 42 * S);
+                ctx.lineTo(56 * S, 36 * S);
+                ctx.lineTo(56 * S, 48 * S);
                 ctx.closePath();
                 ctx.fill();
 
             }} else if (action === 4) {{
-                // ACTION 4: GÓC NHÌN TỪ TRONG XE - GƯƠNG CHIẾU HẬU, BÙA TIM ĐUNG ĐƯA & CẦN GẠT NƯỚC
-                // Gương chiếu hậu
+                // ACTION 4: COCKPIT POV - GƯƠNG CHIẾU HẬU, BÙA TIM ĐUNG ĐƯA & CẦN GẠT NƯỚC
+                // Gương chiếu hậu ô tô
                 ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
                 ctx.beginPath();
                 ctx.roundRect(17 * S, 5 * S, 20 * S, 10 * S, 3 * S);
                 ctx.fill();
@@ -1806,7 +2052,7 @@ if __name__ == "__main__":
                 ctx.lineTo(27 * S, 5 * S);
                 ctx.stroke();
 
-                // Bùa tim vỡ đung đưa
+                // Bùa tim vỡ đung đưa dưới gương chiếu hậu
                 const charm_sway = Math.sin(f * 0.3) * 2.5;
                 const cx = (27 + charm_sway) * S;
                 ctx.beginPath();
@@ -1815,7 +2061,7 @@ if __name__ == "__main__":
                 ctx.stroke();
                 drawHeart(ctx, 27 + charm_sway, 22, 2.5, S, true);
 
-                // Taplo bên dưới & vô lăng
+                // Taplo bên dưới & vô lăng 3 chấu
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(2 * S, 43 * S, 52 * S, 10 * S);
                 ctx.strokeRect(2 * S, 43 * S, 52 * S, 10 * S);
@@ -1849,40 +2095,23 @@ if __name__ == "__main__":
 
             }} else if (action === 5) {{
                 // ACTION 5: TỰA NẮP CAPO CHỤM TAY CHÂM THUỐC DƯỚI MƯA
-                // Xe đỗ bên trái
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.moveTo(0, 36 * S);
-                ctx.lineTo(8 * S, 36 * S);
-                ctx.lineTo(15 * S, 41 * S);
-                ctx.lineTo(28 * S, 42 * S);
-                ctx.lineTo(28 * S, 46 * S);
-                ctx.lineTo(0, 47 * S);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                drawSportsCarSide(ctx, S);
 
-                // Bánh xe đỗ
-                ctx.beginPath();
-                ctx.arc(10 * S, 48 * S, 4 * S, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Chàng trai
-                const bx = 32;
+                const bx = 34;
                 const by = 28;
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
 
-                // Mắt nhắm & giọt lệ
+                drawAnimeHead(ctx, bx, by, S, 'down');
+
+                // Nước mắt rơi
+                ctx.fillStyle = '#00f2fe';
                 ctx.beginPath();
-                ctx.moveTo(bx * S, (by + 1) * S);
-                ctx.lineTo((bx + 2) * S, (by + 2) * S);
-                ctx.stroke();
+                ctx.arc((bx + 2.5) * S, (by + 4) * S, 0.8 * S, 0, Math.PI * 2);
+                ctx.fill();
 
                 // Thân áo tựa nghiêng
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
                 ctx.beginPath();
                 ctx.moveTo((bx - 4) * S, (by + 6) * S);
                 ctx.lineTo((bx + 4) * S, (by + 6) * S);
@@ -1892,19 +2121,21 @@ if __name__ == "__main__":
                 ctx.fill();
                 ctx.stroke();
 
-                // Chụm tay che ngọn lửa điếu thuốc
+                // Chụm hai bàn tay nâng niu ngọn lửa bật lửa
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.roundRect((bx + 1) * S, (by + 6) * S, 6 * S, 4 * S, 2 * S);
                 ctx.fill();
                 ctx.stroke();
-                ctx.fillStyle = '#ff4d8d';
+
+                // Ngọn lửa nhỏ màu cam vàng ấm áp
+                ctx.fillStyle = '#f59e0b';
                 ctx.beginPath();
-                ctx.arc((bx + 4) * S, (by + 7) * S, 1.2 * S, 0, Math.PI * 2);
+                ctx.arc((bx + 4) * S, (by + 7) * S, 1.4 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Khói thuốc bay lên từ tay
-                ctx.strokeStyle = '#000000';
+                // Khói thuốc bay lên từ kẽ ngón tay
+                ctx.strokeStyle = 'rgba(0,0,0,0.45)';
                 for (let k = 1; k < 8; k++) {{
                     const sy = (by + 5 - k * 2) * S;
                     const sx = (bx + 4 + Math.sin(f * 0.4 + k) * 1.8) * S;
@@ -1913,7 +2144,8 @@ if __name__ == "__main__":
                     ctx.stroke();
                 }}
 
-                // Chân tựa xe
+                // Chân bắt chéo tựa xe
+                ctx.strokeStyle = '#000000';
                 ctx.beginPath();
                 ctx.moveTo((bx - 3) * S, (by + 18) * S);
                 ctx.lineTo((bx - 6) * S, 53 * S);
@@ -1926,119 +2158,95 @@ if __name__ == "__main__":
 
             }} else if (action === 6) {{
                 // ACTION 6: NGỒI TRÊN NẮP CAPO, ÁNH SÁNG MÀN HÌNH ĐIỆN THOẠI
-                // Xe thể thao
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.moveTo(2 * S, 48 * S);
-                ctx.lineTo(2 * S, 42 * S);
-                ctx.lineTo(10 * S, 42 * S);
-                ctx.lineTo(18 * S, 36 * S);
-                ctx.lineTo(26 * S, 36 * S);
-                ctx.lineTo(33 * S, 42 * S);
-                ctx.lineTo(50 * S, 43 * S);
-                ctx.lineTo(50 * S, 48 * S);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                // 1. Xe thể thao nhìn nghiêng
+                drawSportsCarSide(ctx, S);
 
-                // Chàng trai
-                const bx = 39;
+                // 2. Chàng trai ngồi trên mui xe tại bx=40, by=26
+                const bx = 40;
                 const by = 26 - beatBounce;
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(bx * S, by * S, 4.8 * S, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+
+                // Đầu và tóc anime
+                drawAnimeHead(ctx, bx, by, S, 'down');
 
                 // Áo hoodie
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
                 ctx.beginPath();
-                ctx.roundRect((bx - 4) * S, (by + 6) * S, 8 * S, 10 * S, 2 * S);
+                ctx.roundRect((bx - 4) * S, (by + 5.5) * S, 8 * S, 11 * S, 2 * S);
                 ctx.fill();
                 ctx.stroke();
 
-                // Điện thoại phát sáng
-                ctx.fillStyle = '#ff4d8d';
-                ctx.fillRect((bx + 6) * S, (by + 8) * S, 5 * S, 7 * S);
-                ctx.strokeRect((bx + 6) * S, (by + 8) * S, 5 * S, 7 * S);
-
-                // Ánh sáng xanh hồng từ màn hình chiếu lên khuôn mặt
-                ctx.fillStyle = 'rgba(255, 77, 141, 0.15)';
+                // Tay cầm điện thoại phát sáng
                 ctx.beginPath();
-                ctx.moveTo((bx + 6) * S, (by + 8) * S);
-                ctx.lineTo(bx * S, by * S);
-                ctx.lineTo((bx + 4) * S, (by - 2) * S);
+                ctx.moveTo((bx + 2) * S, (by + 8) * S);
+                ctx.lineTo((bx + 6) * S, (by + 11) * S);
+                ctx.stroke();
+
+                // Điện thoại smartphone
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect((bx + 6) * S, (by + 9) * S, 4.5 * S, 7 * S);
+                ctx.fillStyle = '#00f2fe'; // Màn hình xanh ngọc phát sáng
+                ctx.fillRect((bx + 6.8) * S, (by + 10) * S, 3 * S, 4.5 * S);
+                // Icon khung chat trên màn hình
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect((bx + 7.5) * S, (by + 11.5) * S, 1.5 * S, 1 * S);
+
+                // Vầng sáng dịu nhẹ hắt lên mặt và áo
+                const grad = ctx.createLinearGradient((bx + 7) * S, (by + 10) * S, bx * S, by * S);
+                grad.addColorStop(0, 'rgba(0, 242, 254, 0.28)');
+                grad.addColorStop(1, 'rgba(0, 242, 254, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo((bx + 7) * S, (by + 10) * S);
+                ctx.lineTo((bx - 1) * S, (by + 1) * S);
+                ctx.lineTo((bx + 3) * S, (by - 1) * S);
                 ctx.closePath();
                 ctx.fill();
 
-                // Điếu thuốc tay trái
+                // Tay trái kẹp điếu thuốc buông thõng
                 ctx.beginPath();
-                ctx.moveTo((bx - 3) * S, (by + 9) * S);
+                ctx.moveTo((bx - 3) * S, (by + 8) * S);
                 ctx.lineTo((bx - 7) * S, (by + 13) * S);
                 ctx.stroke();
+                // Tàn thuốc hồng đỏ
                 ctx.fillStyle = '#ff4d8d';
                 ctx.beginPath();
-                ctx.arc((bx - 8) * S, (by + 13) * S, 1.2 * S, 0, Math.PI * 2);
+                ctx.arc((bx - 7.5) * S, (by + 13) * S, 1.2 * S, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Trái tim đau thắt đập theo beat
-                const heartSize = 4.2 + beatBounce * 1.5;
-                drawHeart(ctx, 20, 13, heartSize, S, true);
+                // Làn khói uốn lượn
+                ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo((bx - 7.5) * S, (by + 12) * S);
+                ctx.bezierCurveTo((bx - 9) * S, (by + 9) * S, (bx - 7) * S, (by + 6) * S, (bx - 9) * S, (by + 3) * S);
+                ctx.stroke();
+
+                // Chân buông gác mui xe
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = Math.max(1.6, S * 0.35);
+                ctx.beginPath();
+                ctx.moveTo((bx - 1) * S, (by + 16) * S);
+                ctx.lineTo((bx - 1) * S, 43 * S);
+                ctx.lineTo((bx + 3) * S, 43 * S);
+                ctx.stroke();
+
+                // Trái tim rạn vỡ đập theo beat
+                const heartSize = 4.8 + beatBounce * 1.5;
+                drawHeart(ctx, 18, 13, heartSize, S, true);
 
             }} else if (action === 7) {{
-                // ACTION 7: CAO TỐC VÔ CỰC, XE LĂN BÁNH XA DẦN
-                ctx.beginPath();
-                ctx.moveTo(28 * S, 20 * S);
-                ctx.lineTo(2 * S, 53 * S);
-                ctx.moveTo(28 * S, 20 * S);
-                ctx.lineTo(54 * S, 53 * S);
-                ctx.stroke();
-
-                // Cọc tiêu lan can phối cảnh
-                [26, 33, 42, 52].forEach(gy => {{
-                    const sc = (gy - 20) / 32.0;
-                    ctx.beginPath();
-                    ctx.moveTo((28 - 26 * sc) * S, gy * S);
-                    ctx.lineTo((28 - 26 * sc) * S, (gy - 3 * sc) * S);
-                    ctx.moveTo((28 + 26 * sc) * S, gy * S);
-                    ctx.lineTo((28 + 26 * sc) * S, (gy - 3 * sc) * S);
-                    ctx.stroke();
-                }});
-
-                // Chiếc xe nhìn từ sau
-                const cx = 28 * S;
-                const cy = 38 * S;
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.roundRect(cx - 10 * S, cy - 1 * S, 20 * S, 6 * S, 2 * S);
-                ctx.fill();
-                ctx.stroke();
-
-                // Cánh gió spoiler
-                ctx.beginPath();
-                ctx.moveTo(cx - 11 * S, cy - 5 * S);
-                ctx.lineTo(cx + 11 * S, cy - 5 * S);
-                ctx.stroke();
-
-                // Dải đèn hậu LED đỏ rực
-                ctx.fillStyle = '#ff4d8d';
-                ctx.fillRect(cx - 9 * S, cy + 1 * S, 18 * S, 1.8 * S);
-
-                // Khói ống xả
-                ctx.strokeStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(cx - 6 * S, cy + 6 * S, 1.2 * S, 0, Math.PI * 2);
-                ctx.arc(cx + 6 * S, cy + 6 * S, 1.2 * S, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Trăng lưỡi liềm & sao
-                drawStar(ctx, 18, 7, 2.5, S);
-                drawStar(ctx, 40, 5, 2.5, S);
-                drawStar(ctx, 48, 11, 2.5, S);
+                // ACTION 7: CAO TỐC VÔ CỰC, XE THỂ THAO ĐI XA DẦN VÀO MÀN ĐÊM
+                drawHighwayLandscape(ctx, S, f);
+                const carY = (37 + Math.sin(f * 0.1) * 1.5) * S;
+                drawSportsCarRear(ctx, 28 * S, carY, S, f);
             }}
 
             ctx.restore();
             updateProgress(cur_t);
         }}
+
 
         function updateProgress(cur_t) {{
             const ratio = Math.min(1, Math.max(0, cur_t / TOTAL_DURATION));
