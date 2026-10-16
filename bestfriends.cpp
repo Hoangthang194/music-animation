@@ -3,7 +3,7 @@ using namespace std;
 constexpr int WIDTH = 128;
 constexpr int HEIGHT = 64;
 constexpr int FRAME_SIZE = (WIDTH * HEIGHT) / 8;
-constexpr int NUM_FRAMES = 295;
+constexpr int NUM_FRAMES = 294;
 
 constexpr uint8_t allFrames[NUM_FRAMES][FRAME_SIZE] = {
     {
@@ -19415,7 +19415,7 @@ int main()
 {
     sf::RenderWindow window(sf::VideoMode({400, 400}), "I miss you...");
     int cnt = 0;
-    while (window.isOpen() && cnt <= 300)
+    while (window.isOpen())
     {
         while (const std::optional<sf::Event> event = window.pollEvent())
         {
@@ -19452,6 +19452,6 @@ int main()
         window.draw(bruh);
         window.display();
         sf::sleep(sf::milliseconds(70));
-        cnt++;
+        cnt = (cnt + 1) % NUM_FRAMES;
     }
 }
