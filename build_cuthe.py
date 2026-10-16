@@ -1198,6 +1198,101 @@ if __name__ == "__main__":
             color: var(--text-muted);
             letter-spacing: 0.5px;
         }}
+        @media (max-width: 640px) {{
+            html, body {{
+                width: 100%;
+                height: 100%;
+                height: 100dvh;
+                overflow: hidden;
+            }}
+            .glow-1 {{
+                width: 65vw;
+                height: 65vw;
+                top: 0;
+                left: 0;
+                opacity: 0.3;
+            }}
+            .glow-2 {{
+                width: 75vw;
+                height: 75vw;
+                bottom: 0;
+                right: 0;
+                opacity: 0.3;
+            }}
+            .app-card {{
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+                height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                padding: max(8px, env(safe-area-inset-top, 0px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                background: rgba(18, 12, 34, 0.94);
+            }}
+            .header {{
+                margin-bottom: 6px;
+                flex-shrink: 0;
+            }}
+            .badge {{
+                font-size: 0.72rem;
+                padding: 2px 10px;
+                margin-bottom: 3px;
+            }}
+            .song-title {{
+                font-size: 1.25rem;
+            }}
+            .song-artist {{
+                font-size: 0.75rem;
+            }}
+            .screen-wrapper {{
+                flex: 1;
+                width: 100%;
+                height: 100%;
+                min-height: 0;
+                aspect-ratio: unset;
+                border-radius: 18px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25);
+            }}
+            .bottom-bar {{
+                margin-top: 8px;
+                gap: 8px;
+                flex-shrink: 0;
+            }}
+            .controls-row {{
+                padding: 0 2px;
+            }}
+            .icon-action-btn {{
+                width: 36px;
+                height: 36px;
+            }}
+            .mode-toggle-btn {{
+                padding: 4px 10px;
+                font-size: 0.72rem;
+            }}
+            .time-tag {{
+                font-size: 0.76rem;
+            }}
+        }}
+        @media (max-height: 520px) {{
+            .header {{
+                display: none;
+            }}
+            .app-card {{
+                padding: 4px 10px;
+            }}
+            .screen-wrapper {{
+                flex: 1;
+                min-height: 0;
+            }}
+            .bottom-bar {{
+                margin-top: 4px;
+                gap: 4px;
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -1370,7 +1465,7 @@ if __name__ == "__main__":
             const rect = screenWrapper.getBoundingClientRect();
             const dpr = Math.max(2, window.devicePixelRatio || 1);
             canvas.width = Math.round(rect.width * dpr);
-            canvas.height = Math.round(rect.width * 0.5 * dpr);
+            canvas.height = Math.round(rect.height * dpr);
         }}
         window.addEventListener('resize', () => {{
             resizeCanvas();
@@ -1652,12 +1747,17 @@ if __name__ == "__main__":
 
         function renderPixelFrame(cur_t) {{
             if (!allBytes) return;
-            const S = canvas.width / 128.0;
+            const S = Math.min(canvas.width / 128.0, canvas.height / 64.0);
+            const offsetX = Math.round((canvas.width - 128 * S) / 2);
+            const offsetY = Math.round((canvas.height - 64 * S) / 2);
             const frameIdx = Math.min(NUM_FRAMES - 1, Math.floor(cur_t / FRAME_DURATION));
 
             ctx.imageSmoothingEnabled = false;
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
 
             const startByte = frameIdx * 1024;
             ctx.fillStyle = '#000000';
@@ -1672,6 +1772,7 @@ if __name__ == "__main__":
                     }}
                 }}
             }}
+            ctx.restore();
             updateProgress(cur_t);
         }}
 
@@ -1681,7 +1782,9 @@ if __name__ == "__main__":
                 return;
             }}
 
-            const S = canvas.width / 128.0;
+            const S = Math.min(canvas.width / 128.0, canvas.height / 64.0);
+            const offsetX = Math.round((canvas.width - 128 * S) / 2);
+            const offsetY = Math.round((canvas.height - 64 * S) / 2);
             const f = Math.floor(cur_t / 0.070);
             const isBlinking = (f % 40 === 0 || f % 40 === 1);
             const beatBounce = Math.abs(Math.sin(cur_t * Math.PI * 2.1)) * 1.5;
@@ -1690,6 +1793,9 @@ if __name__ == "__main__":
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+
             // Styling
             const lw = Math.max(1.8, S * 0.38);
             ctx.lineWidth = lw;
@@ -1697,10 +1803,10 @@ if __name__ == "__main__":
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            // 1. Ground line
+            // 1. Ground line (runs full width across canvas)
             ctx.beginPath();
-            ctx.moveTo(0, 54 * S);
-            ctx.lineTo(canvas.width, 54 * S);
+            ctx.moveTo(-offsetX, 54 * S);
+            ctx.lineTo(canvas.width - offsetX, 54 * S);
             ctx.stroke();
 
             // 2. Grass tufts
@@ -2099,347 +2205,7 @@ if __name__ == "__main__":
                 drawStar(ctx, 48, fx_y + 3, 3.5, S);
             }}
 
-            updateProgress(cur_t);
-        }}
-
-        function render(cur_t) {{
-            if (!isHDMode) {{
-                renderPixelFrame(cur_t);
-                return;
-            }}
-
-            const S = canvas.width / 128.0;
-            const f = Math.floor(cur_t / 0.070);
-            const isBlinking = (f % 40 === 0 || f % 40 === 1);
-            const beatBounce = Math.abs(Math.sin(cur_t * Math.PI * 2.1)) * 1.5;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Styling
-            const lw = Math.max(1.8, S * 0.38);
-            ctx.lineWidth = lw;
-            ctx.strokeStyle = '#000000';
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            // 1. Ground line
-            ctx.beginPath();
-            ctx.moveTo(0, 54 * S);
-            ctx.lineTo(canvas.width, 54 * S);
-            ctx.stroke();
-
-            // 2. Grass tufts
-            [6, 18, 42, 50, 115, 122].forEach(gx => {{
-                ctx.beginPath();
-                ctx.moveTo(gx * S, 53.5 * S);
-                ctx.lineTo(gx * S, 50.5 * S);
-                ctx.stroke();
-            }});
-
-            // 3. Middle Dashed Divider (X = 56)
-            ctx.fillStyle = '#000000';
-            for (let dy = 6; dy < 50; dy += 4) {{
-                ctx.beginPath();
-                ctx.arc(56 * S, dy * S, S * 0.28, 0, Math.PI * 2);
-                ctx.fill();
-            }}
-
-            // 4. Karaoke Lyrics on the right side (Center X = 92)
-            const {{ action, lines }} = getActiveKaraoke(cur_t);
-            const text_x = 92 * S;
-            const y_starts = lines.length === 3 
-                ? [17 * S, 29 * S, 41 * S] 
-                : [11 * S, 21 * S, 31 * S, 41 * S];
-
-            const fontSize = Math.round(S * 3.6);
-            ctx.font = `bold ${{fontSize}}px "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#111827';
-
-            lines.forEach((lineText, idx) => {{
-                if (lineText && idx < y_starts.length) {{
-                    ctx.fillText(lineText, text_x, y_starts[idx]);
-                }}
-            }});
-
-            // 5. Actions on the left side
-            if (action === 1) {{
-                // WALK CYCLE
-                const walk = Math.floor(cur_t / 0.14) % 4;
-                const bx = 26;
-                const by = 30 - beatBounce;
-
-                let legL, legR, armL, armR;
-                if (walk === 0 || walk === 1) {{
-                    armL = [[bx - 3.5, by + 8], [bx - 7.5, by + 13]];
-                    armR = [[bx + 3.5, by + 8], [bx + 7.5, by + 11]];
-                    legL = [[bx - 2, by + 14.5], [bx - 5, 53]];
-                    legR = [[bx + 2, by + 14.5], [bx + 5, 53]];
-                }} else {{
-                    armL = [[bx - 3.5, by + 8], [bx - 7.5, by + 11]];
-                    armR = [[bx + 3.5, by + 8], [bx + 7.5, by + 13]];
-                    legL = [[bx - 2, by + 14.5], [bx + 4, 53]];
-                    legR = [[bx + 2, by + 14.5], [bx - 4, 53]];
-                }}
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    mouth: 'whistle',
-                    armL: armL, armR: armR,
-                    legL: legL, legR: legR
-                }});
-
-                // Floating musical notes
-                const ny = 25 - ((f * 1.5) % 22);
-                const nx = Math.max(4, bx - 14 + Math.sin(f * 0.3) * 2);
-                ctx.beginPath();
-                ctx.arc(nx * S, ny * S, S * 1.2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo((nx + 1.2) * S, ny * S);
-                ctx.lineTo((nx + 1.2) * S, (ny - 4) * S);
-                ctx.lineTo((nx + 3.0) * S, (ny - 3) * S);
-                ctx.stroke();
-
-            }} else if (action === 2) {{
-                // GIRL V SIGN & BOY COOL POSE
-                const bx = 18;
-                const gx = 38;
-                const by = 30 - beatBounce;
-                const gy = 30 - beatBounce;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: 'wink',
-                    armL: [[bx - 3.5, by + 9], [bx + 3.5, by + 11]],
-                }});
-
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    armR: [[gx + 3.5, gy + 8], [gx + 8.5, gy + 2]],
-                }});
-
-                // V fingers
-                ctx.beginPath();
-                ctx.moveTo((gx + 8.5) * S, (gy + 2) * S);
-                ctx.lineTo((gx + 7.0) * S, (gy - 3) * S);
-                ctx.moveTo((gx + 8.5) * S, (gy + 2) * S);
-                ctx.lineTo((gx + 10.5) * S, (gy - 3) * S);
-                ctx.stroke();
-
-                // Sparkle
-                drawStar(ctx, gx + 14, gy - 2, 2.5, S);
-
-            }} else if (action === 3) {{
-                // HOLDING HANDS & PULSING HEART
-                const bx = 20;
-                const gx = 36;
-                const by = 30 - beatBounce;
-                const gy = 30 - beatBounce;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 3.5, by + 9], [28, 39]]
-                }});
-
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armL: [[gx - 3.5, gy + 9], [28, 39]]
-                }});
-
-                // Clasp dot
-                ctx.beginPath();
-                ctx.arc(28 * S, 39 * S, S * 1.2, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Pulsing heart
-                const heartSize = 3.5 + beatBounce * 1.5;
-                const hy = 20 - Math.sin(f * 0.3) * 2;
-                drawHeart(ctx, 28, hy, heartSize, S);
-
-            }} else if (action === 4) {{
-                // SWING DANCE
-                const sway = Math.sin(f * 0.4) * 3;
-                const bx = 18 + sway;
-                const gx = 36 + sway;
-                const by = 30 - beatBounce;
-                const gy = 30 - beatBounce;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 3.5, by + 8], [27 + sway, 20]]
-                }});
-
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armL: [[gx - 3.5, gy + 8], [27 + sway, 20]]
-                }});
-
-                // Twinkling stars
-                const sy = 14 + Math.sin(f * 0.5) * 3;
-                drawStar(ctx, 10, sy, 2.2, S);
-                drawStar(ctx, 46, sy + 4, 2.2, S);
-
-            }} else if (action === 5) {{
-                // GIVING FLOWERS & GIRL JUMPING
-                const bx = 16;
-                const gx = 40;
-                const by = 31;
-                const jump = Math.abs(Math.sin(f * 0.45)) * 6;
-                const gy = 28 - jump;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 3.5, by + 9], [bx + 11, by + 7]]
-                }});
-
-                // Flower bouquet
-                ctx.beginPath();
-                ctx.moveTo((bx + 11) * S, (by + 7) * S);
-                ctx.lineTo((bx + 14) * S, (by + 3) * S);
-                ctx.lineTo((bx + 17) * S, (by + 6) * S);
-                ctx.lineTo((bx + 14) * S, (by + 9) * S);
-                ctx.closePath();
-                ctx.fillStyle = '#ff4d8d';
-                ctx.fill();
-                ctx.stroke();
-
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: 'happy',
-                    armL: [[gx - 3.5, gy + 8], [gx - 8, gy + 2]],
-                    armR: [[gx + 3.5, gy + 8], [gx + 8, gy + 2]]
-                }});
-
-                // Rising heart
-                const hy = gy - 12 - (f % 16);
-                drawHeart(ctx, gx, hy, 2.5, S);
-
-            }} else if (action === 6) {{
-                // UMBRELLA IN RAIN
-                const bx = 20;
-                const gx = 34;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
-
-                // Cloud
-                ctx.beginPath();
-                ctx.ellipse(28 * S, 10 * S, 10 * S, 4 * S, 0, 0, Math.PI * 2);
-                ctx.ellipse(20 * S, 11 * S, 6 * S, 3.5 * S, 0, 0, Math.PI * 2);
-                ctx.ellipse(36 * S, 11 * S, 6 * S, 3.5 * S, 0, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-                ctx.stroke();
-
-                // Falling raindrops
-                ctx.strokeStyle = '#3b82f6';
-                [12, 16, 26, 38, 44].forEach((rx) => {{
-                    const ry = ((f * 2 + rx * 3) % 25) + 14;
-                    if (ry < 53) {{
-                        ctx.beginPath();
-                        ctx.moveTo(rx * S, ry * S);
-                        ctx.lineTo((rx - 1) * S, (ry + 2) * S);
-                        ctx.stroke();
-                    }}
-                }});
-                ctx.strokeStyle = '#000000';
-
-                // Umbrella Dome
-                ctx.beginPath();
-                ctx.arc(28 * S, 21 * S, 14 * S, Math.PI, 0);
-                ctx.closePath();
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-                ctx.stroke();
-
-                // Umbrella Handle
-                ctx.beginPath();
-                ctx.moveTo(28 * S, 21 * S);
-                ctx.lineTo(28 * S, 36 * S);
-                ctx.arc(26.5 * S, 36.5 * S, 1.5 * S, 0, Math.PI);
-                ctx.stroke();
-
-                // Boy
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armR: [[bx + 3.5, by + 9], [28, 35]]
-                }});
-
-                // Girl nestled close
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armL: [[gx - 3.5, gy + 10], [bx + 2, by + 11]]
-                }});
-
-            }} else if (action === 7) {{
-                // WARM HUG & HEART BALLOON
-                const bx = 24;
-                const gx = 32;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
-
-                // Shared body
-                ctx.beginPath();
-                ctx.rect((bx - 3) * S, (by + 7) * S, (gx - bx + 6) * S, 8 * S);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-                ctx.stroke();
-
-                // Arms around each other's backs
-                ctx.beginPath();
-                ctx.moveTo((bx - 3) * S, (by + 9) * S);
-                ctx.lineTo((gx + 2) * S, (by + 10) * S);
-                ctx.moveTo((gx + 3) * S, (gy + 9) * S);
-                ctx.lineTo((bx - 2) * S, (by + 10) * S);
-                ctx.stroke();
-
-                // Heads
-                drawBoy(ctx, bx, by, S, {{ eye: isBlinking ? 'blink' : 'dot' }});
-                drawGirl(ctx, gx, gy, S, {{ bow: true, eye: isBlinking ? 'blink' : 'dot' }});
-
-                // Heart Balloon
-                const blx = 28 + Math.sin(f * 0.2) * 3;
-                const bly = 12;
-                drawHeart(ctx, blx, bly, 4.5, S);
-
-                // Balloon string
-                ctx.beginPath();
-                ctx.moveTo(blx * S, (bly + 4.5) * S);
-                ctx.bezierCurveTo((blx - 2) * S, (bly + 9) * S, (blx + 2) * S, 17 * S, 28 * S, 22 * S);
-                ctx.stroke();
-
-            }} else if (action === 8) {{
-                // FINALE 20/10 CELEBRATION
-                const bx = 18;
-                const gx = 38;
-                const by = 31 - beatBounce;
-                const gy = 31 - beatBounce;
-                const waveArm = Math.sin(f * 0.6) * 3;
-
-                drawBoy(ctx, bx, by, S, {{
-                    eye: isBlinking ? 'blink' : 'dot',
-                    armL: [[bx - 3.5, by + 8], [bx - 7.5, by + 2 + waveArm]],
-                    armR: [[bx + 3.5, by + 8], [bx + 7.5, by + 2 - waveArm]],
-                }});
-
-                drawGirl(ctx, gx, gy, S, {{
-                    bow: true,
-                    eye: 'happy',
-                    armL: [[gx - 3.5, gy + 8], [gx - 7.5, gy + 2 - waveArm]],
-                    armR: [[gx + 3.5, gy + 8], [gx + 7.5, gy + 2 + waveArm]],
-                }});
-
-                // Fireworks / Starbursts
-                const fx_y = 10 + (f % 5);
-                drawStar(ctx, 8, fx_y, 3.5, S);
-                drawStar(ctx, 48, fx_y + 3, 3.5, S);
-            }}
-
+            ctx.restore();
             updateProgress(cur_t);
         }}
 
