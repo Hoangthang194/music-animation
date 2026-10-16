@@ -53,53 +53,56 @@ class TellMeWhyPlayer:
         self.root.title("TELL ME WHY 💔 - Dương Domic (Smoking & Car Drive Animation)")
         self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.root.resizable(False, False)
-        self.root.configure(bg="#0d0914")
+        self.root.configure(bg="#0b0813")
 
-        self.num_frames = NUM_FRAMES
-        with open("tellmewhy_frames.bin", "rb") as f:
+        self.bin_path = os.path.join(os.path.dirname(__file__), "tellmewhy_frames.bin")
+        self.wav_path = os.path.join(os.path.dirname(__file__), "tellmewhy.wav")
+
+        with open(self.bin_path, "rb") as f:
             self.raw_data = f.read()
 
-        self.inverted = False
-        self.ppm_frames = build_ppm_frames(self.raw_data, self.inverted)
-        self.photo_cache = [None] * self.num_frames
-
-        self.wav_path = os.path.abspath("tellmewhy.wav")
-        self.music_enabled = os.path.exists(self.wav_path) and HAS_WINSOUND
+        self.num_frames = len(self.raw_data) // 1024
+        self.current_frame = 0
         self.is_playing = True
         self.is_muted = False
         self.loop = True
-        self.current_frame = 0
+        self.inverted = False
+        self.start_time = None
         self.after_id = None
 
-        self.canvas = tk.Canvas(root, width=WINDOW_WIDTH, height=HEIGHT * SCALE, bg="white", highlightthickness=0)
-        self.canvas.pack(side="top")
-        self.image_item = self.canvas.create_image(0, 0, anchor="nw")
+        self.ppm_frames = build_ppm_frames(self.raw_data, self.inverted)
+        self.photo_cache = [None] * self.num_frames
+
+        self.canvas = tk.Canvas(root, width=WINDOW_WIDTH, height=HEIGHT * SCALE, bg="#000000", highlightthickness=0)
+        self.canvas.pack(side=tk.TOP)
+
+        self.image_item = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.get_photo(0))
 
         self.status_var = tk.StringVar()
-        self.status_label = tk.Label(root, textvariable=self.status_var, font=("Consolas", 10, "bold"), fg="#ff70a6", bg="#0d0914", pady=8)
-        self.status_label.pack(side="bottom", fill="x")
+        self.status_bar = tk.Label(root, textvariable=self.status_var, bg="#120c22", fg="#ff4d8d",
+                                   font=("Segoe UI", 10, "bold"), anchor=tk.CENTER, pady=8)
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        root.bind("<space>", self.toggle_play)
-        root.bind("<r>", self.restart)
-        root.bind("<R>", self.restart)
-        root.bind("<m>", self.toggle_mute)
-        root.bind("<M>", self.toggle_mute)
-        root.bind("<l>", self.toggle_loop)
-        root.bind("<L>", self.toggle_loop)
-        root.bind("<i>", self.toggle_invert)
-        root.bind("<I>", self.toggle_invert)
-        root.bind("<Escape>", lambda e: self.on_close())
-        root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.bind("<space>", self.toggle_play)
+        self.root.bind("<m>", self.toggle_mute)
+        self.root.bind("<M>", self.toggle_mute)
+        self.root.bind("<r>", self.restart)
+        self.root.bind("<R>", self.restart)
+        self.root.bind("<l>", self.toggle_loop)
+        self.root.bind("<L>", self.toggle_loop)
+        self.root.bind("<i>", self.toggle_invert)
+        self.root.bind("<I>", self.toggle_invert)
+        self.root.bind("<Escape>", lambda e: self.root.destroy())
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        self.start_time = None
         self.play_audio()
         self.update_frame()
 
     def play_audio(self):
-        self.start_time = time.perf_counter() - (self.current_frame * FRAME_DURATION)
-        if self.music_enabled and not self.is_muted:
+        if HAS_WINSOUND and os.path.exists(self.wav_path) and not self.is_muted:
             try:
-                flags = winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP
+                flags = winsound.SND_ASYNC | winsound.SND_FILENAME
+                if self.loop: flags |= winsound.SND_LOOP
                 winsound.PlaySound(self.wav_path, flags)
             except Exception: pass
 

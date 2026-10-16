@@ -4,17 +4,18 @@ Dự án tự động chuyển đổi file nhạc MP3 thành bộ tác phẩm an
 
 ---
 
-## 🌟 Bộ 1: "TELL ME WHY" - Dương Domic (Mới Nhất ✨)
+## 🌟 Bộ 1: "TELL ME WHY" - Dương Domic (Bản Nâng Cấp Siêu Chi Tiết ✨)
 Tác phẩm được tạo tự động từ file âm thanh `audio_Feeling Soundzz_download.mp3` theo quy chuẩn [Agent.md](file:///c:/Users/ThangHoang/Documents/20-10/Agent.md).
-- **Thời lượng:** ~26.0 giây (372 frames, 70ms/frame).
-- **Nội dung cảm xúc:**
-  - *"Từng cơn đau tăng dần lên..."* - Chàng trai ôm gối ngồi dưới trăng khuyết buồn.
-  - *"Thời gian trôi âm thầm đếm..."* - Đồng hồ cát trôi lơ lửng, bước đi trong gió lạnh.
-  - *"Nỗi cô đơn ghé qua đêm nay..."* - Với tay tìm hình bóng cô gái xa xăm.
-  - *"Đêm qua đêm nay anh chẳng muốn quay lại..."* - Hai người đứng quay lưng giữa cơn gió đêm.
-  - *"Phải xa em anh nào muốn..."* - Che ô cho nhau, giọt lệ ngấn dài.
-  - *"Vì chia đôi vẫn còn thương..."* - Cặp đôi chạm tay, trái tim vỡ hàn gắn và phập phồng theo beat bass.
-  - **Finale:** Ôm ấm áp, bóng bay trái tim bay bổng và pháo hoa rực rỡ chào kết.
+- **Thời lượng:** ~26.04 giây (372 frames, 70ms/frame).
+- **Nội dung cảm xúc (Sad Boy Lo-Fi & Sports Car Drive):**
+  - *"Từng cơn đau tăng dần lên..."* - Đứng dưới cột đèn đường cổ điển đêm mưa, áo khoác dài, ngậm điếu thuốc với làn khói uốn lượn bay lên.
+  - *"Thời gian trôi âm thầm đếm..."* - Cận cảnh thở các vòng khói tròn (smoke rings) bay lên tan dần cạnh chiếc đồng hồ cát chảy từng hạt.
+  - *"Nỗi cô đơn ghé qua đêm nay..."* - Chiếc coupe thể thao JDM chạy trong mưa, bánh xe 5 chấu xoay tròn, đèn pha rọi sáng đường, người lái gác tay ra cửa sổ kẹp điếu thuốc khói bay lùi về sau.
+  - *"Đêm qua đêm nay anh chẳng muốn quay lại..."* - Góc nhìn từ buồng lái (Cockpit POV): Cần gạt nước quét nước mưa qua lại, gương chiếu hậu có bùa trái tim đung đưa, taplo và vô lăng 3 chấu.
+  - *"Phải xa em anh nào muốn..."* - Xe đỗ ven đường, chàng trai tựa mui xe chụm hai bàn tay che gió châm thuốc, ngấn lệ rơi dưới mưa lạnh.
+  - *"Vì chia đôi vẫn còn thương..."* - Ngồi trên nắp capo, ánh sáng màn hình điện thoại le lói rọi lên khuôn mặt, điếu thuốc tàn tro rơi bên dưới trái tim rạn vỡ đập thắt lại theo nhịp bass.
+  - **Finale:** Đường cao tốc hun hút về chân trời, chiếc xe thể thao với dải đèn LED đỏ rực lăn bánh xa dần vào màn đêm dưới ánh trăng khuyết và trời đầy sao.
+- **Dưới chân hoạt cảnh:** 24 thanh nhạc Equalizer nhảy nhịp nhàng theo tần số âm thanh thực tế (phân tích bằng biến đổi Fourier FFT).
 
 ### 🚀 Cách xem bộ "Tell Me Why":
 1. **Xem trên Web:** Mở file [index.html](file:///c:/Users/ThangHoang/Documents/20-10/index.html) hoặc [tell_me_why.html](file:///c:/Users/ThangHoang/Documents/20-10/tell_me_why.html) (Web Player Full-Height chuẩn Mobile & Desktop).

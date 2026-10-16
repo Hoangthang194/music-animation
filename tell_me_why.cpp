@@ -6,30 +6,30 @@
 
 constexpr int WIDTH = 128;
 constexpr int HEIGHT = 64;
-constexpr int SCALE = 6;
-constexpr int FRAME_SIZE = (WIDTH * HEIGHT) / 8;
+constexpr int FRAME_SIZE = 1024;
 constexpr int NUM_FRAMES = 372;
 constexpr float FRAME_TIME = 0.070f;
+constexpr float SCALE = 6.0f;
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY - Duong Domic [SFML Equalizer Player]");
+    sf::RenderWindow window(sf::VideoMode(WIDTH * SCALE, HEIGHT * SCALE), "TELL ME WHY 💔 - Duong Domic (OLED Animation)");
     window.setFramerateLimit(60);
 
-    // Doc frame tu tellmewhy_frames.bin
+    sf::Music music;
+    if (!music.openFromFile("tellmewhy.wav") && !music.openFromFile("tellmewhy.mp3")) {
+        std::cerr << "Khong the mo file am thanh!" << std::endl;
+    } else {
+        music.play();
+    }
+
     std::ifstream binFile("tellmewhy_frames.bin", std::ios::binary);
     if (!binFile) {
-        std::cerr << "Khong the mo file tellmewhy_frames.bin!" << std::endl;
-        return -1;
+        std::cerr << "Khong the doc tellmewhy_frames.bin!" << std::endl;
+        return 1;
     }
     std::vector<uint8_t> allFrames(NUM_FRAMES * FRAME_SIZE);
     binFile.read(reinterpret_cast<char*>(allFrames.data()), allFrames.size());
     binFile.close();
-
-    sf::Music music;
-    if (music.openFromFile("tellmewhy.mp3")) {
-        music.setLoop(true);
-        music.play();
-    }
 
     sf::Texture texture;
     texture.create(WIDTH, HEIGHT);
